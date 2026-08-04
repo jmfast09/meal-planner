@@ -11,6 +11,7 @@ const CATEGORIES = [
     color: "#F2776B",
     colorDark: "#D9574B",
     light: "#FCEEEA",
+    pastel: "#FAD2CE",
     type: "recipes",
   },
   {
@@ -21,6 +22,7 @@ const CATEGORIES = [
     color: "#D9A928",
     colorDark: "#B4870E",
     light: "#FDF6DF",
+    pastel: "#F2E3B8",
     type: "recipes",
   },
   {
@@ -31,6 +33,7 @@ const CATEGORIES = [
     color: "#4FA3C2",
     colorDark: "#2F7C99",
     light: "#EAF6FB",
+    pastel: "#C5E1EB",
     type: "recipes",
   },
   {
@@ -41,6 +44,7 @@ const CATEGORIES = [
     color: "#34A897",
     colorDark: "#227B6E",
     light: "#E8FAF6",
+    pastel: "#BCE2DD",
     type: "recipes",
   },
   {
@@ -51,6 +55,7 @@ const CATEGORIES = [
     color: "#6FA83C",
     colorDark: "#557F2C",
     light: "#F1FAE6",
+    pastel: "#DCF9B6",
     type: "recipes",
   },
   {
@@ -61,6 +66,7 @@ const CATEGORIES = [
     color: "#6B7FD7",
     colorDark: "#4C5FB0",
     light: "#EEF0FC",
+    pastel: "#CED5F2",
     type: "simple-list",
   },
   {
@@ -71,6 +77,7 @@ const CATEGORIES = [
     color: "#DB6E97",
     colorDark: "#B94A76",
     light: "#FDEFF4",
+    pastel: "#F3CFDD",
     type: "grid-list",
   },
 ];

@@ -18,12 +18,12 @@ function escapeHtml(str) {
 
 const PLATE_ICON = `<svg width="34" height="34" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="24" cy="24" r="19"/><circle cx="24" cy="24" r="11"/></svg>`;
 
-function sidebarHtml(activeSlug) {
-  const tabs = CATEGORIES.map((c) => {
+function tabbarHtml(activeSlug) {
+  const pills = CATEGORIES.map((c) => {
     const active = c.slug === activeSlug ? "is-active" : "";
-    return `<a class="tab ${active}" style="--tab-bg:${c.color}55" href="#/cat/${c.slug}">${c.short}</a>`;
+    return `<a class="tabpill ${active}" style="--pill-bg:${c.pastel}" href="#/cat/${c.slug}">${c.short}</a>`;
   }).join("");
-  return `<nav class="sidebar">${tabs}</nav>`;
+  return `<div class="tabbar-wrap"><nav class="tabbar">${pills}</nav></div>`;
 }
 
 function renderHome() {
@@ -45,9 +45,9 @@ function renderHome() {
           <h1>Meal Planner</h1>
           <p>Escolhe uma categoria para ver as receitas.</p>
         </div>
+        ${tabbarHtml(null)}
         <div class="cover-grid">${covers}</div>
       </main>
-      ${sidebarHtml(null)}
     </div>
   `;
 }
@@ -156,15 +156,36 @@ function renderCategory(slug) {
           </div>
           <div class="banner-tagline">${escapeHtml(cat.tagline)}</div>
         </div>
+        ${tabbarHtml(cat.slug)}
         ${listHtml}
       </main>
-      ${sidebarHtml(cat.slug)}
     </div>
   `;
 }
 
 function ingredientListHtml(items) {
   return `<ul class="ingredient-list">${items.map((i) => `<li>${escapeHtml(i)}</li>`).join("")}</ul>`;
+}
+
+function prepChecklistHtml(catSlug, recipeSlug, steps) {
+  const items = steps.map((step, i) => {
+    const key = prepStorageKey(catSlug, recipeSlug, i);
+    const checked = localStorage.getItem(key) === "1" ? "checked" : "";
+    return `
+      <li>
+        <label class="prep-step">
+          <input type="checkbox" data-prep-key="${key}" ${checked} />
+          <span class="prep-step-num">${i + 1}.</span>
+          <span class="prep-step-text">${escapeHtml(step)}</span>
+        </label>
+      </li>
+    `;
+  }).join("");
+  return `<ul class="prep-list">${items}</ul>`;
+}
+
+function prepStorageKey(catSlug, recipeSlug, stepIndex) {
+  return `mealplanner:prep:${catSlug}:${recipeSlug}:${stepIndex}`;
 }
 
 function renderRecipe(catSlug, recipeSlug) {
@@ -203,6 +224,8 @@ function renderRecipe(catSlug, recipeSlug) {
           </div>
         </div>
 
+        ${tabbarHtml(cat.slug)}
+
         <div class="crumbs"><a href="#/">Categorias</a> / <a href="#/cat/${cat.slug}">${escapeHtml(cat.short)}</a> / ${escapeHtml(recipe.name)}</div>
 
         <div class="recipe-page">
@@ -230,15 +253,12 @@ function renderRecipe(catSlug, recipeSlug) {
             <div class="box">
               <div class="box-header">Preparação</div>
               <div class="box-body">
-                <ol class="prep-list">
-                  ${recipe.preparacao.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}
-                </ol>
+                ${prepChecklistHtml(cat.slug, recipe.slug, recipe.preparacao)}
               </div>
             </div>
           </div>
         </div>
       </main>
-      ${sidebarHtml(cat.slug)}
     </div>
   `;
 }
@@ -252,8 +272,8 @@ function renderNotFound() {
           <h1>Oops</h1>
           <p>Página não encontrada. <a href="#/">Voltar ao início</a></p>
         </div>
+        ${tabbarHtml(null)}
       </main>
-      ${sidebarHtml(null)}
     </div>
   `;
 }
@@ -277,6 +297,16 @@ function router() {
   app.innerHTML = html;
   window.scrollTo(0, 0);
 }
+
+// Delegated listener: persists checklist state across visits (per recipe step).
+document.addEventListener("change", (e) => {
+  const input = e.target;
+  if (input.matches && input.matches('.prep-step input[type="checkbox"]')) {
+    const key = input.dataset.prepKey;
+    if (input.checked) localStorage.setItem(key, "1");
+    else localStorage.removeItem(key);
+  }
+});
 
 window.addEventListener("hashchange", router);
 window.addEventListener("DOMContentLoaded", router);

@@ -46,6 +46,7 @@
   --accent: #f2776b;
   --accent-dark: #d9574b;
   --light: #fceeea;
+  --pastel: #fad2ce;
 }
 
 * { box-sizing: border-box; }
@@ -64,77 +65,60 @@ button { font: inherit; cursor: pointer; }
 ul { margin: 0; padding: 0; list-style: none; }
 
 /* ---------- Category color themes ---------- */
-body.cat-bake     { --accent: #F2776B; --accent-dark: #D9574B; --light: #FCEEEA; }
-body.cat-pasta    { --accent: #D9A928; --accent-dark: #B4870E; --light: #FDF6DF; }
-body.cat-classics { --accent: #4FA3C2; --accent-dark: #2F7C99; --light: #EAF6FB; }
-body.cat-world    { --accent: #34A897; --accent-dark: #227B6E; --light: #E8FAF6; }
-body.cat-healthy  { --accent: #6FA83C; --accent-dark: #557F2C; --light: #F1FAE6; }
-body.cat-easy     { --accent: #6B7FD7; --accent-dark: #4C5FB0; --light: #EEF0FC; }
-body.cat-sides    { --accent: #DB6E97; --accent-dark: #B94A76; --light: #FDEFF4; }
+body.cat-bake     { --accent: #F2776B; --accent-dark: #D9574B; --light: #FCEEEA; --pastel: #FAD2CE; }
+body.cat-pasta    { --accent: #D9A928; --accent-dark: #B4870E; --light: #FDF6DF; --pastel: #F2E3B8; }
+body.cat-classics { --accent: #4FA3C2; --accent-dark: #2F7C99; --light: #EAF6FB; --pastel: #C5E1EB; }
+body.cat-world    { --accent: #34A897; --accent-dark: #227B6E; --light: #E8FAF6; --pastel: #BCE2DD; }
+body.cat-healthy  { --accent: #6FA83C; --accent-dark: #557F2C; --light: #F1FAE6; --pastel: #DCF9B6; }
+body.cat-easy     { --accent: #6B7FD7; --accent-dark: #4C5FB0; --light: #EEF0FC; --pastel: #CED5F2; }
+body.cat-sides    { --accent: #DB6E97; --accent-dark: #B94A76; --light: #FDEFF4; --pastel: #F3CFDD; }
 
 /* ---------- App shell ---------- */
 .app-shell {
-  display: flex;
   min-height: 100vh;
 }
 
 .main {
-  flex: 1;
-  min-width: 0;
   padding: 0 0 64px;
 }
 
-/* ---------- Sidebar tabs ---------- */
-.sidebar {
-  width: 68px;
-  flex-shrink: 0;
+/* ---------- Tab bar (centered, horizontal, on every page) ---------- */
+.tabbar-wrap {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 24px 8px;
-  order: 2;
+  justify-content: center;
+  padding: 18px 20px 6px;
 }
 
-.tab {
+.tabbar {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  max-width: 760px;
+}
+
+.tabpill {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  height: 96px;
-  border-radius: 12px 0 0 12px;
+  padding: 9px 18px;
+  border-radius: 999px;
   font-family: var(--font-body);
-  font-weight: 700;
+  font-weight: 400;
   font-size: 12px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   color: var(--ink);
-  background: var(--tab-bg, #eee);
-  opacity: 0.72;
+  background: var(--pill-bg, #eee);
+  opacity: 0.8;
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
-.tab:hover { opacity: 1; }
-.tab.is-active { opacity: 1; box-shadow: inset 3px 0 0 rgba(0,0,0,0.15); }
+.tabpill:hover { opacity: 1; }
+.tabpill.is-active { opacity: 1; box-shadow: inset 0 0 0 1.5px rgba(0,0,0,0.25); }
 
-@media (max-width: 720px) {
-  .app-shell { flex-direction: column; }
-  .sidebar {
-    order: 0;
-    flex-direction: row;
-    width: 100%;
-    overflow-x: auto;
-    padding: 10px 12px;
-    gap: 8px;
-  }
-  .tab {
-    writing-mode: horizontal-tb;
-    transform: none;
-    height: auto;
-    width: auto;
-    white-space: nowrap;
-    padding: 8px 14px;
-    border-radius: 999px;
-  }
+@media (max-width: 480px) {
+  .tabpill { padding: 7px 14px; font-size: 11px; }
+  .tabbar { gap: 8px; }
 }
 
 /* ---------- Home ---------- */
@@ -205,8 +189,8 @@ body.cat-sides    { --accent: #DB6E97; --accent-dark: #B94A76; --light: #FDEFF4;
 
 /* ---------- Category banner (list & recipe pages) ---------- */
 .banner {
-  background: var(--accent);
-  color: #fff;
+  background: var(--pastel);
+  color: var(--accent-dark);
   padding: 26px 40px;
   display: flex;
   align-items: center;
@@ -225,45 +209,44 @@ body.cat-sides    { --accent: #DB6E97; --accent-dark: #B94A76; --light: #FDEFF4;
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  opacity: 0.9;
-  border: 1px solid rgba(255,255,255,0.6);
+  opacity: 0.85;
+  border: 1px solid currentColor;
   border-radius: 999px;
   padding: 6px 14px;
   white-space: nowrap;
+  color: var(--accent-dark);
 }
-.banner .back-link:hover { background: rgba(255,255,255,0.15); }
+.banner .back-link:hover { background: rgba(0,0,0,0.06); }
 
 .banner h1 {
   font-family: var(--font-script);
   font-size: 34px;
   font-weight: 400;
   margin: 0;
+  color: var(--accent-dark);
 }
 
 .banner .banner-tagline {
   max-width: 360px;
   font-size: 13px;
   line-height: 1.5;
-  opacity: 0.92;
+  opacity: 0.85;
+  color: var(--accent-dark);
 }
 
-/* ---------- Wavy frame (recipe list card) ---------- */
+/* ---------- Recipe list card ---------- */
 .wavy-wrap {
-  padding: 34px 40px 10px;
+  padding: 24px 40px 10px;
 }
 
 .wavy-frame {
-  clip-path: url(#wavy-blob);
-  background: var(--accent);
-  padding: 22px;
   max-width: 640px;
   margin: 0 auto;
 }
 
 .wavy-inner {
   background: var(--paper);
-  border-radius: 18px;
-  padding: 30px 34px;
+  padding: 6px 2px;
   min-height: 320px;
 }
 
@@ -300,7 +283,7 @@ body.cat-sides    { --accent: #DB6E97; --accent-dark: #B94A76; --light: #FDEFF4;
 .recipe-table tbody td:last-child { text-align: right; color: var(--ink-soft); }
 
 .recipe-table tbody tr.is-link a {
-  font-weight: 600;
+  font-weight: 400;
   color: var(--ink);
 }
 .recipe-table tbody tr.is-link a:hover { color: var(--accent-dark); text-decoration: underline; }
@@ -368,7 +351,7 @@ body.cat-sides    { --accent: #DB6E97; --accent-dark: #B94A76; --light: #FDEFF4;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   font-size: 30px;
-  font-weight: 700;
+  font-weight: 400;
   margin: 0;
   color: var(--ink);
 }
@@ -442,22 +425,58 @@ body.cat-sides    { --accent: #DB6E97; --accent-dark: #B94A76; --light: #FDEFF4;
   color: var(--accent-dark);
 }
 
-.prep-list { counter-reset: step; }
 .prep-list li {
-  counter-increment: step;
-  display: flex;
-  gap: 10px;
-  padding: 8px 0;
   border-bottom: 1px dashed var(--line);
-  font-size: 14px;
-  line-height: 1.5;
 }
 .prep-list li:last-child { border-bottom: none; }
-.prep-list li::before {
-  content: counter(step) ".";
+
+.prep-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+  cursor: pointer;
+}
+
+.prep-step input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin: 2px 0 0;
+  border: 1.5px solid var(--accent-dark);
+  border-radius: 5px;
+  display: grid;
+  place-content: center;
+}
+.prep-step input[type="checkbox"]::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--accent-dark);
+  transform: scale(0);
+  transition: transform 0.1s ease;
+}
+.prep-step input[type="checkbox"]:checked::before { transform: scale(1); }
+
+.prep-step-num {
   font-weight: 800;
   color: var(--accent-dark);
   flex-shrink: 0;
+}
+
+.prep-step-text {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.prep-step:has(input:checked) .prep-step-text,
+.prep-step:has(input:checked) .prep-step-num {
+  color: var(--ink-soft);
+  text-decoration: line-through;
+  text-decoration-color: var(--ink-soft);
 }
 
 .notas-box { margin-top: 18px; }
@@ -483,4 +502,16 @@ body.cat-sides    { --accent: #DB6E97; --accent-dark: #B94A76; --light: #FDEFF4;
 @media (max-width: 640px) {
   .home-hero, .cover-grid { padding-left: 20px; padding-right: 20px; }
   .crumbs { padding-left: 20px; padding-right: 20px; }
+
+  .cover-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .cover-card {
+    border-radius: 16px;
+    padding: 14px;
+  }
+  .cover-card .cover-short { font-size: 9px; top: 10px; left: 12px; }
+  .cover-card .cover-title { font-size: 19px; }
+  .cover-card .cover-tagline { font-size: 10px; margin-top: 6px; }
 }
