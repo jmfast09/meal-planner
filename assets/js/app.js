@@ -18,6 +18,46 @@ function escapeHtml(str) {
 
 const PLATE_ICON = `<svg width="34" height="34" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="24" cy="24" r="19"/><circle cx="24" cy="24" r="11"/></svg>`;
 
+const ICON_SVG_ATTRS = `fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"`;
+
+const COVER_ICONS = {
+  bake: `<svg viewBox="0 0 48 48" ${ICON_SVG_ATTRS}>
+    <rect x="6" y="10" width="36" height="28" rx="6"/>
+    <rect x="12" y="17" width="24" height="12" rx="2"/>
+    <circle cx="16" cy="33" r="1.6" fill="currentColor" stroke="none"/>
+    <circle cx="24" cy="33" r="1.6" fill="currentColor" stroke="none"/>
+    <circle cx="32" cy="33" r="1.6" fill="currentColor" stroke="none"/>
+  </svg>`,
+  pasta: `<svg viewBox="0 0 48 48" ${ICON_SVG_ATTRS}>
+    <path d="M14,10 L34,10 Q38,10 38,14 L38,34 Q38,38 34,38 L14,38 Q10,38 10,34 L10,14 Q10,10 14,10 Z"/>
+    <path d="M10,24 L38,24"/>
+    <path d="M14,7 L17,10" /><path d="M34,7 L31,10" /><path d="M14,41 L17,38" /><path d="M34,41 L31,38" />
+  </svg>`,
+  classics: `<svg viewBox="0 0 48 48" ${ICON_SVG_ATTRS}>
+    <ellipse cx="27" cy="31" rx="13" ry="6.5"/>
+    <path d="M12,26 Q8,31 12,36" stroke-width="3"/>
+    <path d="M15,24 Q27,9 41,21"/>
+  </svg>`,
+  world: `<svg viewBox="0 0 48 48" ${ICON_SVG_ATTRS}>
+    <path d="M6,20 Q24,42 42,20" stroke-width="2.4"/>
+    <path d="M10,19 L14,12 L18,19 L22,11 L26,19 L30,11 L34,19 L38,13"/>
+  </svg>`,
+  healthy: `<svg viewBox="0 0 48 48" ${ICON_SVG_ATTRS}>
+    <path d="M24,5 C18,5 14,12 14,19 C14,19 10,25 10,32 C10,39 16,44 24,44 C32,44 38,39 38,32 C38,25 34,19 34,19 C34,12 30,5 24,5 Z"/>
+    <circle cx="26" cy="31" r="6"/>
+  </svg>`,
+  easy: `<svg viewBox="0 0 48 48" ${ICON_SVG_ATTRS}>
+    <path d="M12,8 Q24,2 36,8 L36,30 Q36,40 24,40 Q12,40 12,30 Z"/>
+    <rect x="9" y="27" width="22" height="10" rx="2"/>
+    <path d="M6,31 L9,31 L9,34 L6,34 Z"/>
+    <circle cx="24" cy="16" r="2.6"/>
+  </svg>`,
+  sides: `<svg viewBox="0 0 48 48" ${ICON_SVG_ATTRS}>
+    <path d="M24,6 C33,5 42,12 40,21 C45,29 36,39 27,41 C17,43 7,37 7,27 C6,17 15,8 24,6 Z"/>
+    <circle cx="23" cy="24" r="8"/>
+  </svg>`,
+};
+
 function tabbarHtml(activeSlug) {
   const pills = CATEGORIES.map((c) => {
     const active = c.slug === activeSlug ? "is-active" : "";
@@ -32,8 +72,8 @@ function renderHome() {
     <a class="cover-card" style="--card-color:${c.pastel};--card-text:${c.colorDark}" href="#/cat/${c.slug}">
       <span class="cover-short">${c.short}</span>
       <div>
+        <div class="cover-icon">${COVER_ICONS[c.slug]}</div>
         <div class="cover-title">${escapeHtml(c.title)}</div>
-        <div class="cover-tagline">${escapeHtml(c.tagline)}</div>
       </div>
     </a>
   `).join("");

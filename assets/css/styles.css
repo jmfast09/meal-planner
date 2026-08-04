@@ -104,7 +104,7 @@ body.cat-sides    { --accent: #DB6E97; --accent-dark: #F884AF; --light: #FDEFF4;
   padding: 9px 18px;
   border-radius: 999px;
   font-family: var(--font-body);
-  font-weight: 400;
+  font-weight: 700;
   font-size: 12px;
   letter-spacing: 0.1em;
   color: var(--pill-text, var(--ink));
@@ -175,19 +175,19 @@ body.cat-sides    { --accent: #DB6E97; --accent-dark: #F884AF; --light: #FDEFF4;
   opacity: 0.85;
 }
 
+.cover-card .cover-icon {
+  color: var(--card-text);
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: center;
+}
+.cover-card .cover-icon svg { width: 46px; height: 46px; }
+
 .cover-card .cover-title {
   font-family: var(--font-script);
   font-size: 30px;
   line-height: 1.15;
   color: var(--card-text);
-}
-
-.cover-card .cover-tagline {
-  margin-top: 10px;
-  font-size: 12px;
-  color: var(--card-text);
-  opacity: 0.85;
-  line-height: 1.4;
 }
 
 /* ---------- Category banner (list & recipe pages) ---------- */
@@ -232,6 +232,7 @@ body.cat-sides    { --accent: #DB6E97; --accent-dark: #F884AF; --light: #FDEFF4;
 .banner .banner-tagline {
   max-width: 360px;
   font-size: 13px;
+  font-weight: 700;
   line-height: 1.5;
   opacity: 0.85;
   color: var(--accent-dark);
@@ -328,7 +329,7 @@ body.cat-sides    { --accent: #DB6E97; --accent-dark: #F884AF; --light: #FDEFF4;
   font-size: 13px;
   text-align: center;
   color: var(--ink);
-  font-weight: 600;
+  font-weight: 400;
 }
 
 /* ---------- Recipe detail page ---------- */
@@ -515,6 +516,6 @@ body.cat-sides    { --accent: #DB6E97; --accent-dark: #F884AF; --light: #FDEFF4;
     padding: 14px;
   }
   .cover-card .cover-short { font-size: 9px; top: 10px; left: 12px; }
+  .cover-card .cover-icon svg { width: 30px; height: 30px; }
   .cover-card .cover-title { font-size: 19px; }
-  .cover-card .cover-tagline { font-size: 10px; margin-top: 6px; }
 }
