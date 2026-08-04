@@ -9,7 +9,7 @@ const CATEGORIES = [
     title: "Life is what you bake it",
     tagline: "Warm, golden, and straight from the oven — comfort and coziness.",
     color: "#F2776B",
-    colorDark: "#D9574B",
+    colorDark: "#FF8181",
     light: "#FCEEEA",
     pastel: "#FAD2CE",
     type: "recipes",
