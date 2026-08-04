@@ -131,7 +131,7 @@ body.cat-sides    { --accent: #DB6E97; --accent-dark: #B94A76; --light: #FDEFF4;
   font-size: 56px;
   font-weight: 400;
   margin: 0 0 6px;
-  color: #d9574b;
+  color: #d77083;
 }
 .home-hero p {
   margin: 0;
@@ -141,9 +141,11 @@ body.cat-sides    { --accent: #DB6E97; --accent-dark: #B94A76; --light: #FDEFF4;
 
 .cover-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 22px;
   padding: 16px 40px 40px;
+  max-width: 1100px;
+  margin: 0 auto;
 }
 
 .cover-card {
@@ -157,10 +159,10 @@ body.cat-sides    { --accent: #DB6E97; --accent-dark: #B94A76; --light: #FDEFF4;
   text-align: center;
   padding: 24px;
   overflow: hidden;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.07);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.05);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
-.cover-card:hover { transform: translateY(-4px); box-shadow: 0 12px 26px rgba(0,0,0,0.14); }
+.cover-card:hover { transform: translateY(-4px); box-shadow: 0 12px 26px rgba(0,0,0,0.1); }
 
 .cover-card .cover-short {
   position: absolute;
@@ -169,21 +171,22 @@ body.cat-sides    { --accent: #DB6E97; --accent-dark: #B94A76; --light: #FDEFF4;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.14em;
-  color: rgba(255,255,255,0.85);
+  color: var(--ink);
+  opacity: 0.75;
 }
 
 .cover-card .cover-title {
   font-family: var(--font-script);
   font-size: 30px;
   line-height: 1.15;
-  color: #fff;
-  text-shadow: 0 1px 8px rgba(0,0,0,0.08);
+  color: var(--ink);
 }
 
 .cover-card .cover-tagline {
   margin-top: 10px;
   font-size: 12px;
-  color: rgba(255,255,255,0.85);
+  color: var(--ink);
+  opacity: 0.75;
   line-height: 1.4;
 }
 

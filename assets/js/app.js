@@ -29,7 +29,7 @@ function tabbarHtml(activeSlug) {
 function renderHome() {
   document.body.className = "";
   const covers = CATEGORIES.map((c) => `
-    <a class="cover-card" style="--card-color:${c.color}" href="#/cat/${c.slug}">
+    <a class="cover-card" style="--card-color:${c.pastel}" href="#/cat/${c.slug}">
       <span class="cover-short">${c.short}</span>
       <div>
         <div class="cover-title">${escapeHtml(c.title)}</div>
