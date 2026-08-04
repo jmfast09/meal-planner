@@ -21,7 +21,7 @@ const PLATE_ICON = `<svg width="34" height="34" viewBox="0 0 48 48" fill="none" 
 function tabbarHtml(activeSlug) {
   const pills = CATEGORIES.map((c) => {
     const active = c.slug === activeSlug ? "is-active" : "";
-    return `<a class="tabpill ${active}" style="--pill-bg:${c.pastel}" href="#/cat/${c.slug}">${c.short}</a>`;
+    return `<a class="tabpill ${active}" style="--pill-bg:${c.pastel};--pill-text:${c.colorDark}" href="#/cat/${c.slug}">${c.short}</a>`;
   }).join("");
   return `<div class="tabbar-wrap"><nav class="tabbar">${pills}</nav></div>`;
 }
@@ -29,7 +29,7 @@ function tabbarHtml(activeSlug) {
 function renderHome() {
   document.body.className = "";
   const covers = CATEGORIES.map((c) => `
-    <a class="cover-card" style="--card-color:${c.pastel}" href="#/cat/${c.slug}">
+    <a class="cover-card" style="--card-color:${c.pastel};--card-text:${c.colorDark}" href="#/cat/${c.slug}">
       <span class="cover-short">${c.short}</span>
       <div>
         <div class="cover-title">${escapeHtml(c.title)}</div>

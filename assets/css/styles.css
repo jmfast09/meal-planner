@@ -66,12 +66,12 @@ ul { margin: 0; padding: 0; list-style: none; }
 
 /* ---------- Category color themes ---------- */
 body.cat-bake     { --accent: #F2776B; --accent-dark: #D9574B; --light: #FCEEEA; --pastel: #FAD2CE; }
-body.cat-pasta    { --accent: #D9A928; --accent-dark: #B4870E; --light: #FDF6DF; --pastel: #F2E3B8; }
-body.cat-classics { --accent: #4FA3C2; --accent-dark: #2F7C99; --light: #EAF6FB; --pastel: #C5E1EB; }
-body.cat-world    { --accent: #34A897; --accent-dark: #227B6E; --light: #E8FAF6; --pastel: #BCE2DD; }
-body.cat-healthy  { --accent: #6FA83C; --accent-dark: #557F2C; --light: #F1FAE6; --pastel: #DCF9B6; }
-body.cat-easy     { --accent: #6B7FD7; --accent-dark: #4C5FB0; --light: #EEF0FC; --pastel: #CED5F2; }
-body.cat-sides    { --accent: #DB6E97; --accent-dark: #B94A76; --light: #FDEFF4; --pastel: #F3CFDD; }
+body.cat-pasta    { --accent: #D9A928; --accent-dark: #EFCD60; --light: #FDF6DF; --pastel: #FFECB1; }
+body.cat-classics { --accent: #4FA3C2; --accent-dark: #4696A6; --light: #EAF6FB; --pastel: #9EE2F1; }
+body.cat-world    { --accent: #34A897; --accent-dark: #57A292; --light: #E8FAF6; --pastel: #93E9D7; }
+body.cat-healthy  { --accent: #6FA83C; --accent-dark: #67BFAD; --light: #F1FAE6; --pastel: #DCF9B6; }
+body.cat-easy     { --accent: #6B7FD7; --accent-dark: #92A2E6; --light: #EEF0FC; --pastel: #CED5F2; }
+body.cat-sides    { --accent: #DB6E97; --accent-dark: #F884AF; --light: #FDEFF4; --pastel: #FFCFE0; }
 
 /* ---------- App shell ---------- */
 .app-shell {
@@ -107,7 +107,7 @@ body.cat-sides    { --accent: #DB6E97; --accent-dark: #B94A76; --light: #FDEFF4;
   font-weight: 400;
   font-size: 12px;
   letter-spacing: 0.1em;
-  color: var(--ink);
+  color: var(--pill-text, var(--ink));
   background: var(--pill-bg, #eee);
   opacity: 0.8;
   transition: opacity 0.15s ease, transform 0.15s ease;
@@ -171,22 +171,22 @@ body.cat-sides    { --accent: #DB6E97; --accent-dark: #B94A76; --light: #FDEFF4;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.14em;
-  color: var(--ink);
-  opacity: 0.75;
+  color: var(--card-text);
+  opacity: 0.85;
 }
 
 .cover-card .cover-title {
   font-family: var(--font-script);
   font-size: 30px;
   line-height: 1.15;
-  color: var(--ink);
+  color: var(--card-text);
 }
 
 .cover-card .cover-tagline {
   margin-top: 10px;
   font-size: 12px;
-  color: var(--ink);
-  opacity: 0.75;
+  color: var(--card-text);
+  opacity: 0.85;
   line-height: 1.4;
 }
 
