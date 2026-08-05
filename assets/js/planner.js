@@ -79,6 +79,12 @@ function plannerFormatWeekLabel(iso) {
   return `${d}/${m}/${y}`;
 }
 
+function plannerRandomDish(categorySlug) {
+  const options = plannerDishOptions(categorySlug);
+  if (options.length === 0) return null;
+  return options[Math.floor(Math.random() * options.length)];
+}
+
 /* ---------- Rendering ---------- */
 
 function plannerMeasureTextWidth(text, font) {
@@ -158,6 +164,7 @@ function plannerMenuRowHtml(slug, draft, readOnly) {
       <div class="menu-row-field">
         <input type="text" class="menu-dish-input" data-category="${slug}" value="${escapeHtml(row.dish)}" ${readOnly ? "readonly" : ""} autocomplete="off" />
         ${readOnly ? "" : `<div class="menu-suggestions" data-category="${slug}" hidden></div>`}
+        ${readOnly ? "" : `<button type="button" class="menu-row-generate" data-category="${slug}" aria-label="Gerar prato aleatório"><img src="assets/img/icons/sparkle-${slug}.svg" alt="" /></button>`}
       </div>
       <input type="text" class="menu-doses-input" data-category="${slug}" value="${escapeHtml(row.doses)}" ${readOnly ? "readonly" : ""} />
     </div>
@@ -202,7 +209,10 @@ function plannerFormHtml(draft, readOnly) {
 
       <div class="menu-box">
         <div class="menu-box-head">
-          <span class="menu-title">Menu da semana</span>
+          <span class="menu-title-group">
+            <span class="menu-title">Menu da semana</span>
+            ${readOnly ? "" : `<button type="button" class="menu-generate-all" aria-label="Gerar menu aleatório"><img src="assets/img/icons/generate.svg" alt="" /></button>`}
+          </span>
           <span class="menu-doses-head">doses</span>
         </div>
         <div class="menu-table">${menuRows}</div>
@@ -396,7 +406,45 @@ function bindPlannerEvents() {
         e.dataTransfer.effectAllowed = "copy";
       });
     }
+
+    // sparkle button: random dish for this category only
+    const generateBtn = root.querySelector(`.menu-row-generate[data-category="${slug}"]`);
+    if (generateBtn) {
+      generateBtn.addEventListener("click", () => {
+        const pick = plannerRandomDish(slug);
+        if (!pick) return;
+        input.value = pick.name;
+        draft.menu[slug].dish = pick.name;
+        if (dosesInput) {
+          dosesInput.value = pick.doses;
+          draft.menu[slug].doses = pick.doses;
+        }
+        persist();
+        const totalEl = root.querySelector(".menu-doses-total");
+        if (totalEl) totalEl.textContent = plannerTotalDoses(draft);
+      });
+    }
   });
+
+  // header sparkle button: random dish for every category at once
+  const generateAllBtn = root.querySelector(".menu-generate-all");
+  if (generateAllBtn) {
+    generateAllBtn.addEventListener("click", () => {
+      PLANNER_MENU_CATEGORIES.forEach((slug) => {
+        const pick = plannerRandomDish(slug);
+        if (!pick) return;
+        draft.menu[slug].dish = pick.name;
+        draft.menu[slug].doses = pick.doses;
+        const rowInput = root.querySelector(`.menu-dish-input[data-category="${slug}"]`);
+        const rowDoses = root.querySelector(`.menu-doses-input[data-category="${slug}"]`);
+        if (rowInput) rowInput.value = pick.name;
+        if (rowDoses) rowDoses.value = pick.doses;
+      });
+      persist();
+      const totalEl = root.querySelector(".menu-doses-total");
+      if (totalEl) totalEl.textContent = plannerTotalDoses(draft);
+    });
+  }
 
   // weekly grid cells: free text + drop target
   root.querySelectorAll(".grid-textarea").forEach((textarea) => {
