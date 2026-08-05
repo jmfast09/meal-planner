@@ -81,6 +81,29 @@ function plannerFormatWeekLabel(iso) {
 
 /* ---------- Rendering ---------- */
 
+function plannerMeasureTextWidth(text, font) {
+  const canvas = plannerMeasureTextWidth._canvas || (plannerMeasureTextWidth._canvas = document.createElement("canvas"));
+  const ctx = canvas.getContext("2d");
+  ctx.font = font;
+  return ctx.measureText(text || "").width;
+}
+
+function plannerFitPillWidth(textarea) {
+  const cell = textarea.closest(".grid-cell");
+  if (!cell) return;
+  const isHighlighted = cell.classList.contains("highlight-pink") || cell.classList.contains("highlight-green");
+  if (!isHighlighted) { textarea.style.width = ""; return; }
+
+  const style = getComputedStyle(textarea);
+  const font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+  const textWidth = plannerMeasureTextWidth(textarea.value, font);
+  const paddingLeft = parseFloat(style.paddingLeft) || 0;
+  const paddingRight = parseFloat(style.paddingRight) || 0;
+  const cellMax = cell.clientWidth - 16;
+  const target = Math.min(Math.max(textWidth + paddingLeft + paddingRight + 4, 40), Math.max(cellMax, 40));
+  textarea.style.width = `${target}px`;
+}
+
 function plannerIconHtml(count) {
   if (count === 1) return `<img class="tupperware-icon" src="assets/img/icons/tupperware-1.svg" alt="Tupperware x1" />`;
   if (count === 2) return `<img class="tupperware-icon" src="assets/img/icons/tupperware-2.svg" alt="Tupperware x2" />`;
@@ -383,6 +406,7 @@ function bindPlannerEvents() {
     const autoGrow = () => {
       textarea.style.height = "auto";
       textarea.style.height = `${textarea.scrollHeight}px`;
+      plannerFitPillWidth(textarea);
     };
     autoGrow();
 

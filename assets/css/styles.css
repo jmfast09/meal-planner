@@ -761,8 +761,18 @@ body.cat-planner  { --accent: #F5A572; --accent-dark: #F59E72; --light: #FFF1E8;
 }
 .grid-textarea:focus { outline: none; }
 
-.grid-cell.highlight-pink .grid-textarea { background: #FFE4EE; border-radius: 999px; margin: 0 auto; }
-.grid-cell.highlight-green .grid-textarea { background: #DCF9B6; border-radius: 999px; margin: 0 auto; }
+.grid-cell.highlight-pink .grid-textarea,
+.grid-cell.highlight-green .grid-textarea {
+  width: auto;
+  max-width: 92%;
+  flex: none;
+  border-radius: 999px;
+  margin: 0 auto;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.grid-cell.highlight-pink .grid-textarea { background: #FFE4EE; }
+.grid-cell.highlight-green .grid-textarea { background: #DCF9B6; }
 
 .highlight-swatch {
   position: absolute;
