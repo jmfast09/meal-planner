@@ -70,7 +70,7 @@ body.cat-pasta    { --accent: #D9A928; --accent-dark: #EFCD60; --light: #FDF6DF;
 body.cat-classics { --accent: #4FA3C2; --accent-dark: #4696A6; --light: #EAF6FB; --pastel: #9EE2F1; }
 body.cat-world    { --accent: #34A897; --accent-dark: #57A292; --light: #E8FAF6; --pastel: #93E9D7; }
 body.cat-healthy  { --accent: #6FA83C; --accent-dark: #67BFAD; --light: #F1FAE6; --pastel: #DCF9B6; }
-body.cat-easy     { --accent: #6B7FD7; --accent-dark: #92A2E6; --light: #EEF0FC; --pastel: #CED5F2; }
+body.cat-easy     { --accent: #6B7FD7; --accent-dark: #92A2E6; --light: #EEF0FC; --pastel: #DCE3FE; }
 body.cat-sides    { --accent: #DB6E97; --accent-dark: #F884AF; --light: #FDEFF4; --pastel: #FFCFE0; }
 
 /* ---------- App shell ---------- */
@@ -287,7 +287,7 @@ body.cat-sides    { --accent: #DB6E97; --accent-dark: #F884AF; --light: #FDEFF4;
 
 .recipe-table tbody tr.is-link a {
   font-weight: 400;
-  color: var(--ink);
+  color: #2b2b2b;
 }
 .recipe-table tbody tr.is-link a:hover { color: var(--accent-dark); text-decoration: underline; }
 
@@ -356,7 +356,7 @@ body.cat-sides    { --accent: #DB6E97; --accent-dark: #F884AF; --light: #FDEFF4;
   font-size: 30px;
   font-weight: 400;
   margin: 0;
-  color: var(--ink);
+  color: #2b2b2b;
 }
 
 .recipe-meta {

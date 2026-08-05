@@ -66,7 +66,7 @@ const CATEGORIES = [
     color: "#6B7FD7",
     colorDark: "#92A2E6",
     light: "#EEF0FC",
-    pastel: "#CED5F2",
+    pastel: "#DCE3FE",
     type: "simple-list",
   },
   {
