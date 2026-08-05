@@ -20,7 +20,7 @@ function plannerEmptyDraft() {
   grid.sexta.jantar = "Uber eats";
   grid.sexta.jantarHighlight = "green";
 
-  return { week: "", portions: "20", notes: "", menu, grid };
+  return { week: "", portions: "18", notes: "", menu, grid };
 }
 
 function plannerLoadDraft() {
@@ -87,6 +87,18 @@ function plannerTotalDoses(draft) {
     const n = parseInt((draft.menu[slug] && draft.menu[slug].doses) || "", 10);
     return sum + (Number.isNaN(n) ? 0 : n);
   }, 0);
+}
+
+/* Copies an archived week's data into the current draft, keeping the current draft's Week field. */
+function plannerCopyEntryToCurrentWeek(entryId) {
+  const entry = plannerLoadArchive().find((e) => e.id === entryId);
+  if (!entry) return;
+  const currentWeek = plannerLoadDraft().week;
+  const copied = JSON.parse(JSON.stringify(entry));
+  delete copied.id;
+  delete copied.savedAt;
+  copied.week = currentWeek;
+  plannerSaveDraft(copied);
 }
 
 function plannerFormatWeekLabel(iso) {
@@ -259,7 +271,7 @@ function plannerArchiveEntryText(entry) {
 function plannerArchiveListHtml() {
   const archive = plannerLoadArchive();
   if (archive.length === 0) {
-    return `<div class="empty-state"><span class="emoji">🗂️</span>Ainda não guardaste nenhuma semana.</div>`;
+    return `<div class="empty-state"><span class="emoji">🗂️</span>Ainda não guardaste nenhuma semana.</div><div class="browser-only-note">Apenas visível no Web browser</div>`;
   }
 
   const years = Array.from(new Set(archive.filter((e) => e.week).map((e) => e.week.slice(0, 4)))).sort().reverse();
@@ -299,7 +311,7 @@ function plannerArchiveListHtml() {
   const sorted = filtered.sort((a, b) => b.savedAt.localeCompare(a.savedAt));
 
   if (sorted.length === 0) {
-    return `${filtersHtml}<div class="empty-state"><span class="emoji">🔍</span>Nenhuma semana encontrada com estes filtros.</div>`;
+    return `${filtersHtml}<div class="empty-state"><span class="emoji">🔍</span>Nenhuma semana encontrada com estes filtros.</div><div class="browser-only-note">Apenas visível no Web browser</div>`;
   }
 
   const cards = sorted.map((entry) => `
@@ -310,6 +322,7 @@ function plannerArchiveListHtml() {
           <span class="archive-portions">Portions: ${escapeHtml(entry.portions)}</span>
         </div>
         <div class="archive-actions">
+          <button type="button" class="archive-copy-btn" data-id="${entry.id}">Copiar para a semana atual</button>
           <button type="button" class="archive-toggle-btn" data-id="${entry.id}">${plannerArchiveOpenId === entry.id ? "Fechar" : "Ver"}</button>
           <button type="button" class="archive-delete-btn" data-id="${entry.id}">Apagar</button>
         </div>
@@ -317,7 +330,7 @@ function plannerArchiveListHtml() {
       ${plannerArchiveOpenId === entry.id ? `<div class="archive-card-body">${plannerFormHtml(entry, true)}</div>` : ""}
     </div>
   `).join("");
-  return `${filtersHtml}<div class="archive-list">${cards}</div>`;
+  return `${filtersHtml}<div class="archive-list">${cards}</div><div class="browser-only-note">Apenas visível no Web browser</div>`;
 }
 
 function renderPlanner() {
@@ -643,6 +656,15 @@ function bindPlannerEvents() {
       plannerArchiveSearchWasFocused = false;
     }
   }
+
+  root.querySelectorAll(".archive-copy-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (!confirm("Isto substitui a semana atual pelos dados desta semana do arquivo (exceto a data). Continuar?")) return;
+      plannerCopyEntryToCurrentWeek(btn.dataset.id);
+      plannerViewMode = "current";
+      router();
+    });
+  });
 
   root.querySelectorAll(".archive-toggle-btn").forEach((btn) => {
     btn.addEventListener("click", () => {

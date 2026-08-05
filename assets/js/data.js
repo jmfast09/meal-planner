@@ -414,6 +414,7 @@ const RECIPES = {
     {
       slug: "mex-bowl",
       name: "Mex Bowl",
+      icon: "mex-bowl",
       doses: 4,
       tempo: "1h",
       ingredients: [

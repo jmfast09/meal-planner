@@ -141,8 +141,7 @@ function renderSimpleList(cat) {
 
 function renderGridList(cat) {
   const data = SIMPLE_LISTS[cat.slug];
-  const items = [...data.items].sort((a, b) => a.name.localeCompare(b.name, "pt"));
-  const cells = items.map((it) => `
+  const cells = data.items.map((it) => `
     <div class="side-item" data-search-name="${escapeHtml(it.name)}">
       <div class="side-icon">
         ${it.icon ? `<img src="assets/img/icons/recipes/${it.icon}.svg" alt="" />` : PLATE_ICON}
@@ -236,13 +235,14 @@ function recipeHistorySectionHtml(recipe) {
 
   return `
     <div class="box history-box">
-      <div class="box-header">Histórico</div>
+      <div class="box-header">Histórico (Menu da semana)</div>
       <div class="box-body">
         <div class="history-filters">
           <select class="history-month-filter"><option value="">Mês (todos)</option>${monthOptions}</select>
           <select class="history-year-filter"><option value="">Ano (todos)</option>${yearOptions}</select>
         </div>
         <ul class="history-list"></ul>
+        <div class="browser-only-note">Apenas visível no Web browser</div>
       </div>
     </div>
   `;
