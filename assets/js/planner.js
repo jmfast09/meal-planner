@@ -16,7 +16,9 @@ function plannerEmptyDraft() {
     if (d.weekday) grid[d.key].tupperware = d.tupperwareDefault;
   });
   grid.terca.almoco = "Salada";
+  grid.terca.almocoHighlight = "green";
   grid.sexta.jantar = "Uber eats";
+  grid.sexta.jantarHighlight = "green";
 
   return { week: "", portions: "20", notes: "", menu, grid };
 }
@@ -90,6 +92,7 @@ function plannerGridCellHtml(day, meal, draft, readOnly) {
   const value = escapeHtml(cell[meal] || "");
   const isTupperwareCell = day.weekday && meal === "almoco";
   const count = isTupperwareCell ? (cell.tupperware || 0) : 0;
+  const highlight = cell[`${meal}Highlight`] || "";
 
   const tupperwareControlsHtml = isTupperwareCell && !readOnly
     ? `
@@ -102,9 +105,21 @@ function plannerGridCellHtml(day, meal, draft, readOnly) {
     `
     : "";
 
+  const highlightControlsHtml = !readOnly
+    ? `
+      <button type="button" class="highlight-swatch highlight-swatch-${highlight || "none"}" data-day="${day.key}" data-meal="${meal}" aria-label="Cor de destaque"></button>
+      <div class="highlight-menu" hidden data-day="${day.key}" data-meal="${meal}">
+        <button type="button" class="highlight-option highlight-option-none" data-color="" aria-label="Sem cor"></button>
+        <button type="button" class="highlight-option highlight-option-pink" data-color="pink" aria-label="Rosa"></button>
+        <button type="button" class="highlight-option highlight-option-green" data-color="green" aria-label="Verde"></button>
+      </div>
+    `
+    : "";
+
   return `
-    <div class="grid-cell">
-      <textarea class="grid-textarea" data-day="${day.key}" data-meal="${meal}" ${readOnly ? "readonly" : ""} placeholder="">${value}</textarea>
+    <div class="grid-cell${highlight ? ` highlight-${highlight}` : ""}">
+      ${highlightControlsHtml}
+      <textarea class="grid-textarea" data-day="${day.key}" data-meal="${meal}" ${readOnly ? "readonly" : ""} placeholder="" rows="1">${value}</textarea>
       ${tupperwareControlsHtml}
       ${isTupperwareCell ? plannerIconHtml(count) : ""}
     </div>
@@ -121,7 +136,7 @@ function plannerMenuRowHtml(slug, draft, readOnly) {
         <input type="text" class="menu-dish-input" data-category="${slug}" value="${escapeHtml(row.dish)}" ${readOnly ? "readonly" : ""} autocomplete="off" />
         ${readOnly ? "" : `<div class="menu-suggestions" data-category="${slug}" hidden></div>`}
       </div>
-      <input type="text" class="menu-doses-input" data-category="${slug}" value="${escapeHtml(row.doses)}" ${readOnly ? "readonly" : ""} placeholder="doses" />
+      <input type="text" class="menu-doses-input" data-category="${slug}" value="${escapeHtml(row.doses)}" ${readOnly ? "readonly" : ""} />
     </div>
   `;
 }
@@ -216,8 +231,14 @@ function renderPlanner() {
   const body = plannerViewMode === "current"
     ? `
       <div class="planner-actions">
-        <button type="button" class="planner-btn planner-save-btn">Guardar no Arquivo</button>
         <button type="button" class="planner-btn planner-btn-ghost planner-reset-btn">Nova semana em branco</button>
+        <button type="button" class="planner-btn planner-btn-icon planner-save-btn" title="Guardar no Arquivo" aria-label="Guardar no Arquivo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/>
+            <path d="M17 21v-8H7v8"/>
+            <path d="M7 3v5h8"/>
+          </svg>
+        </button>
       </div>
       ${plannerFormHtml(draft, false)}
     `
@@ -254,6 +275,7 @@ function renderPlanner() {
 function plannerCloseAllPopovers() {
   document.querySelectorAll(".menu-suggestions").forEach((el) => { el.hidden = true; });
   document.querySelectorAll(".tupperware-menu").forEach((el) => { el.hidden = true; });
+  document.querySelectorAll(".highlight-menu").forEach((el) => { el.hidden = true; });
 }
 
 function bindPlannerEvents() {
@@ -358,9 +380,16 @@ function bindPlannerEvents() {
     const day = textarea.dataset.day;
     const meal = textarea.dataset.meal;
 
+    const autoGrow = () => {
+      textarea.style.height = "auto";
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    };
+    autoGrow();
+
     textarea.addEventListener("input", () => {
       draft.grid[day][meal] = textarea.value;
       persist();
+      autoGrow();
     });
 
     textarea.addEventListener("dragover", (e) => { e.preventDefault(); });
@@ -371,6 +400,33 @@ function bindPlannerEvents() {
       textarea.value = textarea.value.trim() ? `${textarea.value.trim()} + ${dish}` : dish;
       draft.grid[day][meal] = textarea.value;
       persist();
+      autoGrow();
+    });
+  });
+
+  // highlight color picker (pink / green label behind the text)
+  root.querySelectorAll(".highlight-swatch").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const day = btn.dataset.day;
+      const meal = btn.dataset.meal;
+      const menu = root.querySelector(`.highlight-menu[data-day="${day}"][data-meal="${meal}"]`);
+      const wasOpen = menu && !menu.hidden;
+      plannerCloseAllPopovers();
+      if (menu) menu.hidden = wasOpen;
+    });
+  });
+
+  root.querySelectorAll(".highlight-menu").forEach((menu) => {
+    const day = menu.dataset.day;
+    const meal = menu.dataset.meal;
+    menu.querySelectorAll("button").forEach((optBtn) => {
+      optBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        draft.grid[day][`${meal}Highlight`] = optBtn.dataset.color || "";
+        persist();
+        router();
+      });
     });
   });
 
@@ -440,7 +496,13 @@ function bindPlannerEvents() {
 }
 
 document.addEventListener("click", (e) => {
-  if (!e.target.closest(".menu-row-field") && !e.target.closest(".tupperware-plus") && !e.target.closest(".tupperware-menu")) {
+  if (
+    !e.target.closest(".menu-row-field") &&
+    !e.target.closest(".tupperware-plus") &&
+    !e.target.closest(".tupperware-menu") &&
+    !e.target.closest(".highlight-swatch") &&
+    !e.target.closest(".highlight-menu")
+  ) {
     plannerCloseAllPopovers();
   }
 });
