@@ -56,8 +56,23 @@ function renderHome() {
   `;
 }
 
+function listHeaderHtml(label) {
+  return `
+    <div class="list-header">
+      <span class="list-pill">${escapeHtml(label)}</span>
+      <input type="text" class="category-search" placeholder="Procurar..." autocomplete="off" />
+    </div>
+  `;
+}
+
+function recipeRowIconHtml(recipe) {
+  return recipe.icon
+    ? `<img class="recipe-row-icon" src="assets/img/icons/recipes/${recipe.icon}.svg" alt="" />`
+    : `<span class="recipe-row-icon recipe-row-icon-placeholder">${PLATE_ICON}</span>`;
+}
+
 function renderCategoryList(cat) {
-  const items = RECIPES[cat.slug] || [];
+  const items = [...(RECIPES[cat.slug] || [])].sort((a, b) => a.name.localeCompare(b.name, "pt"));
   let bodyHtml;
 
   if (items.length === 0) {
@@ -69,8 +84,13 @@ function renderCategoryList(cat) {
     `;
   } else {
     const rows = items.map((r) => `
-      <tr class="is-link">
-        <td><a href="#/cat/${cat.slug}/${r.slug}">${escapeHtml(r.name)}</a></td>
+      <tr class="is-link" data-search-name="${escapeHtml(r.name)}">
+        <td>
+          <a class="recipe-row-link" href="#/cat/${cat.slug}/${r.slug}">
+            ${recipeRowIconHtml(r)}
+            <span>${escapeHtml(r.name)}</span>
+          </a>
+        </td>
         <td>${r.doses}</td>
       </tr>
     `).join("");
@@ -86,7 +106,7 @@ function renderCategoryList(cat) {
     <div class="wavy-wrap">
       <div class="wavy-frame">
         <div class="wavy-inner">
-          <span class="list-pill">Lista de Receitas</span>
+          ${listHeaderHtml("Lista de Receitas")}
           ${bodyHtml}
         </div>
       </div>
@@ -96,8 +116,9 @@ function renderCategoryList(cat) {
 
 function renderSimpleList(cat) {
   const data = SIMPLE_LISTS[cat.slug];
-  const rows = data.items.map((it) => `
-    <tr>
+  const items = [...data.items].sort((a, b) => a.name.localeCompare(b.name, "pt"));
+  const rows = items.map((it) => `
+    <tr data-search-name="${escapeHtml(it.name)}">
       <td>${escapeHtml(it.name)}</td>
       <td>${escapeHtml(it.value)}</td>
     </tr>
@@ -107,7 +128,7 @@ function renderSimpleList(cat) {
     <div class="wavy-wrap">
       <div class="wavy-frame">
         <div class="wavy-inner">
-          <span class="list-pill">Lista de Receitas</span>
+          ${listHeaderHtml(cat.listLabel || "Lista de Receitas")}
           <table class="recipe-table">
             <thead><tr><th>${data.columns[0]}</th><th>${data.columns[1]}</th></tr></thead>
             <tbody>${rows}</tbody>
@@ -120,10 +141,13 @@ function renderSimpleList(cat) {
 
 function renderGridList(cat) {
   const data = SIMPLE_LISTS[cat.slug];
-  const items = data.items.map((name) => `
-    <div class="side-item">
-      <div class="side-icon">${PLATE_ICON}</div>
-      <div class="side-name">${escapeHtml(name)}</div>
+  const items = [...data.items].sort((a, b) => a.name.localeCompare(b.name, "pt"));
+  const cells = items.map((it) => `
+    <div class="side-item" data-search-name="${escapeHtml(it.name)}">
+      <div class="side-icon">
+        ${it.icon ? `<img src="assets/img/icons/recipes/${it.icon}.svg" alt="" />` : PLATE_ICON}
+      </div>
+      <div class="side-name" style="color:${it.color || "var(--ink)"}">${escapeHtml(it.name)}</div>
     </div>
   `).join("");
 
@@ -131,13 +155,25 @@ function renderGridList(cat) {
     <div class="wavy-wrap">
       <div class="wavy-frame">
         <div class="wavy-inner" style="padding:0;">
-          <div style="padding:30px 34px 0;"><span class="list-pill">Lista de Sides</span></div>
-          <div class="sides-grid">${items}</div>
+          <div style="padding:30px 34px 0;">${listHeaderHtml("Lista de Sides")}</div>
+          <div class="sides-grid">${cells}</div>
           <div style="height:20px;"></div>
         </div>
       </div>
     </div>
   `;
+}
+
+function bindCategorySearch() {
+  const input = document.querySelector(".category-search");
+  if (!input) return;
+  input.addEventListener("input", () => {
+    const q = input.value.trim().toLowerCase();
+    document.querySelectorAll("[data-search-name]").forEach((el) => {
+      const name = el.dataset.searchName.toLowerCase();
+      el.style.display = name.includes(q) ? "" : "none";
+    });
+  });
 }
 
 function renderCategory(slug) {
@@ -192,6 +228,55 @@ function prepStorageKey(catSlug, recipeSlug, stepIndex) {
   return `mealplanner:prep:${catSlug}:${recipeSlug}:${stepIndex}`;
 }
 
+function recipeHistorySectionHtml(recipe) {
+  const matches = plannerFindWeeksForDish(recipe.name);
+  const years = Array.from(new Set(matches.filter((m) => m.week).map((m) => m.week.slice(0, 4)))).sort().reverse();
+  const monthOptions = MONTH_NAMES_PT.map((m, i) => `<option value="${String(i + 1).padStart(2, "0")}">${m}</option>`).join("");
+  const yearOptions = years.map((y) => `<option value="${y}">${y}</option>`).join("");
+
+  return `
+    <div class="box history-box">
+      <div class="box-header">Histórico</div>
+      <div class="box-body">
+        <div class="history-filters">
+          <select class="history-month-filter"><option value="">Mês (todos)</option>${monthOptions}</select>
+          <select class="history-year-filter"><option value="">Ano (todos)</option>${yearOptions}</select>
+        </div>
+        <ul class="history-list"></ul>
+      </div>
+    </div>
+  `;
+}
+
+function bindRecipeHistory(recipe) {
+  const list = document.querySelector(".history-list");
+  const monthSel = document.querySelector(".history-month-filter");
+  const yearSel = document.querySelector(".history-year-filter");
+  if (!list || !monthSel || !yearSel) return;
+
+  function renderList() {
+    const month = monthSel.value;
+    const year = yearSel.value;
+    const filtered = plannerFindWeeksForDish(recipe.name).filter((m) => {
+      if (!m.week) return !month && !year;
+      const [y, mo] = m.week.split("-");
+      if (year && y !== year) return false;
+      if (month && mo !== month) return false;
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      list.innerHTML = `<li class="history-empty">Ainda sem histórico para este prato.</li>`;
+      return;
+    }
+    list.innerHTML = filtered.map((m) => `<li>${escapeHtml(plannerFormatWeekLabel(m.week))}</li>`).join("");
+  }
+
+  monthSel.addEventListener("change", renderList);
+  yearSel.addEventListener("change", renderList);
+  renderList();
+}
+
 function renderRecipe(catSlug, recipeSlug) {
   const cat = findCategory(catSlug);
   const recipe = findRecipe(catSlug, recipeSlug);
@@ -234,7 +319,9 @@ function renderRecipe(catSlug, recipeSlug) {
 
         <div class="recipe-page">
           <div class="recipe-head">
-            <div class="recipe-icon">${PLATE_ICON}</div>
+            ${recipe.icon
+              ? `<img class="recipe-dish-icon" src="assets/img/icons/recipes/${recipe.icon}.svg" alt="" />`
+              : `<div class="recipe-icon">${PLATE_ICON}</div>`}
             <h1>${escapeHtml(recipe.name)}</h1>
           </div>
 
@@ -261,6 +348,8 @@ function renderRecipe(catSlug, recipeSlug) {
               </div>
             </div>
           </div>
+
+          ${recipeHistorySectionHtml(recipe)}
         </div>
       </main>
     </div>
@@ -308,6 +397,11 @@ function router() {
   lastRouterHash = hash;
 
   if (parts[0] === "planner") bindPlannerEvents();
+  else if (parts[0] === "cat" && parts[1] && !parts[2]) bindCategorySearch();
+  else if (parts[0] === "cat" && parts[1] && parts[2]) {
+    const recipe = findRecipe(parts[1], parts[2]);
+    if (recipe) bindRecipeHistory(recipe);
+  }
 }
 
 // Delegated listener: persists checklist state across visits (per recipe step).

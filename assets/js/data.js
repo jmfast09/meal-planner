@@ -68,6 +68,7 @@ const CATEGORIES = [
     light: "#EEF0FC",
     pastel: "#DCE3FE",
     type: "simple-list",
+    listLabel: "Lista de Easy meals",
   },
   {
     slug: "sides",
@@ -81,6 +82,8 @@ const CATEGORIES = [
     type: "grid-list",
   },
 ];
+
+const MONTH_NAMES_PT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
 /* Weekly meal planner — first tab, kept separate from CATEGORIES since it
    isn't a recipe category (no cover card, no recipe list). */
@@ -111,6 +114,7 @@ const RECIPES = {
     {
       slug: "dumpling-bake",
       name: "Dumpling Bake",
+      icon: "dumpling-bake",
       doses: 3,
       tempo: "40 min",
       ingredients: [
@@ -139,6 +143,7 @@ const RECIPES = {
     {
       slug: "lasanha",
       name: "Lasanha",
+      icon: "lasanha",
       doses: 6,
       tempo: "1h30",
       ingredients: [
@@ -179,6 +184,7 @@ const RECIPES = {
     {
       slug: "lasanha-ricotta-espinafres",
       name: "Lasanha de Ricotta e Espinafres",
+      icon: "lasanha-ricotta",
       doses: 6,
       tempo: "1h",
       ingredients: [
@@ -209,6 +215,7 @@ const RECIPES = {
     {
       slug: "gratinado-batata-alho-frances",
       name: "Gratinado de Batata e Alho Francês",
+      icon: "gratinado",
       doses: 6,
       tempo: "1h30",
       ingredients: [
@@ -240,6 +247,7 @@ const RECIPES = {
     {
       slug: "carbonara",
       name: "Carbonara",
+      icon: "carbonara",
       doses: 4,
       tempo: "30 min",
       ingredients: [
@@ -265,6 +273,7 @@ const RECIPES = {
     {
       slug: "bolonhesa",
       name: "Bolonhesa",
+      icon: "bolonhesa",
       doses: 4,
       tempo: "30 min",
       ingredients: [
@@ -292,6 +301,7 @@ const RECIPES = {
     {
       slug: "vegan-mac-cheese",
       name: '"Vegan" Mac & Cheese',
+      icon: "vegan-mac-cheese",
       doses: 4,
       tempo: "40 min",
       ingredients: [
@@ -322,6 +332,7 @@ const RECIPES = {
     {
       slug: "carne-porco-portuguesa",
       name: "Carne de Porco à Portuguesa",
+      icon: "carne-de-porco",
       doses: 4,
       tempo: "1h",
       ingredients: [
@@ -347,6 +358,7 @@ const RECIPES = {
     {
       slug: "hamburguer-no-prato",
       name: "Hambúrguer no Prato",
+      icon: "hamburguer",
       doses: 4,
       tempo: "30 min",
       ingredients: [
@@ -369,6 +381,7 @@ const RECIPES = {
     {
       slug: "penne-camaroes-pesto-feta-tomate",
       name: "Penne com Camarões, Pesto, Feta e Tomate",
+      icon: "penne",
       doses: 4,
       tempo: "1h",
       tempoFlag: "confirmar tempo de prep",
@@ -452,14 +465,14 @@ const SIMPLE_LISTS = {
   },
   sides: {
     items: [
-      "Arroz branco",
-      "Buttered noodles",
-      "Carrot \"fries\"",
-      "Batatinha air fryer",
-      "Veggies",
-      "Pesto penne",
-      "Salada",
-      "Batata doce",
+      { name: "Arroz branco", icon: "arroz", color: "#FFB38D" },
+      { name: "Buttered noodles", icon: "noodles", color: "#F8D567" },
+      { name: "Carrot \"fries\"", icon: "carrot-fries", color: "#FF8181" },
+      { name: "Batatinha air fryer", icon: "batatinha", color: "#D5B75C" },
+      { name: "Veggies", icon: "veggies", color: "#74B277" },
+      { name: "Pesto penne", icon: "pesto-penne", color: "#4D9D77" },
+      { name: "Salada", icon: "salada", color: "#60BBA8" },
+      { name: "Batata doce", icon: "batata-doce", color: "#B099CD" },
     ],
   },
 };

@@ -274,8 +274,30 @@ body.cat-planner  { --accent: #F5A572; --accent-dark: #F59E72; --light: #FFF1E8;
   letter-spacing: 0.06em;
   padding: 8px 18px;
   border-radius: 999px;
-  margin-bottom: 18px;
 }
+
+.list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.category-search {
+  flex: 1;
+  min-width: 140px;
+  max-width: 220px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--paper);
+}
+.category-search:focus { outline: none; border-color: var(--accent-dark); }
 
 .recipe-table { width: 100%; border-collapse: collapse; }
 .recipe-table thead th {
@@ -303,6 +325,11 @@ body.cat-planner  { --accent: #F5A572; --accent-dark: #F59E72; --light: #FFF1E8;
 }
 .recipe-table tbody tr.is-link a:hover { color: var(--accent-dark); text-decoration: underline; }
 
+.recipe-row-link { display: flex; align-items: center; gap: 10px; }
+.recipe-row-icon { width: 30px; height: 30px; flex-shrink: 0; object-fit: contain; }
+.recipe-row-icon-placeholder { display: flex; align-items: center; justify-content: center; color: var(--accent); }
+.recipe-row-icon-placeholder svg { width: 22px; height: 22px; }
+
 .empty-state {
   text-align: center;
   padding: 40px 10px;
@@ -327,20 +354,18 @@ body.cat-planner  { --accent: #F5A572; --accent-dark: #F59E72; --light: #FFF1E8;
 }
 .side-item:nth-child(2n) { border-right: none; }
 .side-icon {
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  border: 2px solid var(--accent);
+  width: 52px;
+  height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--accent-dark);
 }
+.side-icon img { width: 100%; height: 100%; object-fit: contain; }
 .side-name {
   font-size: 13px;
   text-align: center;
-  color: var(--ink);
-  font-weight: 400;
+  font-weight: 700;
 }
 
 /* ---------- Recipe detail page ---------- */
@@ -360,6 +385,13 @@ body.cat-planner  { --accent: #F5A572; --accent-dark: #F59E72; --light: #FFF1E8;
   align-items: center;
   justify-content: center;
   color: var(--accent);
+}
+.recipe-dish-icon {
+  display: block;
+  width: 110px;
+  height: 110px;
+  margin: 0 auto 10px;
+  object-fit: contain;
 }
 .recipe-head h1 {
   font-family: var(--font-title);
@@ -502,6 +534,26 @@ body.cat-planner  { --accent: #F5A572; --accent-dark: #F59E72; --light: #FFF1E8;
   color: var(--accent-dark);
   white-space: pre-line;
 }
+
+.history-box { margin-top: 22px; }
+.history-filters { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.history-filters select {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--ink);
+  background: var(--paper);
+}
+.history-list li {
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--line);
+  font-size: 14px;
+  color: var(--ink);
+}
+.history-list li:last-child { border-bottom: none; }
+.history-empty { color: var(--ink-soft); font-style: italic; }
 
 /* ---------- Footer nav (prev/next-ish) ---------- */
 .crumbs {
@@ -879,6 +931,21 @@ body.cat-planner  { --accent: #F5A572; --accent-dark: #F59E72; --light: #FFF1E8;
 .tupperware-menu button { border: none; background: none; padding: 6px 11px; font-size: 12px; font-weight: 700; cursor: pointer; color: var(--ink); }
 .tupperware-menu button:hover { background: var(--light); }
 .tupperware-icon { position: absolute; bottom: 0; right: 2px; width: 68px; height: 68px; pointer-events: none; }
+
+.archive-filters { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+.archive-filters select,
+.archive-filters .archive-search {
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--ink);
+  background: var(--paper);
+}
+.archive-filters .archive-search { flex: 1; min-width: 160px; }
+.archive-filters select:focus,
+.archive-filters .archive-search:focus { outline: none; border-color: var(--accent-dark); }
 
 .archive-list { display: flex; flex-direction: column; gap: 14px; }
 .archive-card { border: 1.5px solid var(--line); border-radius: 14px; overflow: hidden; }

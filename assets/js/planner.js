@@ -58,6 +58,22 @@ function plannerSaveArchive(list) {
   localStorage.setItem(PLANNER_ARCHIVE_KEY, JSON.stringify(list));
 }
 
+/* Weeks (from the archive) where a given dish was set in the Menu da semana table. */
+function plannerFindWeeksForDish(dishName) {
+  const needle = dishName.trim().toLowerCase();
+  if (!needle) return [];
+  const matches = [];
+  plannerLoadArchive().forEach((entry) => {
+    PLANNER_MENU_CATEGORIES.forEach((slug) => {
+      const row = entry.menu && entry.menu[slug];
+      if (row && row.dish && row.dish.trim().toLowerCase() === needle) {
+        matches.push({ week: entry.week, savedAt: entry.savedAt, category: slug });
+      }
+    });
+  });
+  return matches.sort((a, b) => (b.week || "").localeCompare(a.week || "") || b.savedAt.localeCompare(a.savedAt));
+}
+
 function plannerDishOptions(categorySlug) {
   if (categorySlug === "easy") {
     return SIMPLE_LISTS.easy.items.map((it) => ({ name: it.name, doses: it.value }));
@@ -230,12 +246,62 @@ function plannerFormHtml(draft, readOnly) {
   `;
 }
 
+let plannerArchiveFilterMonth = "";
+let plannerArchiveFilterYear = "";
+let plannerArchiveSearchQuery = "";
+let plannerArchiveSearchWasFocused = false;
+
+function plannerArchiveEntryText(entry) {
+  const dishNames = PLANNER_MENU_CATEGORIES.map((slug) => (entry.menu && entry.menu[slug] && entry.menu[slug].dish) || "").join(" ");
+  return `${dishNames} ${entry.notes || ""} ${entry.portions || ""}`.toLowerCase();
+}
+
 function plannerArchiveListHtml() {
   const archive = plannerLoadArchive();
   if (archive.length === 0) {
     return `<div class="empty-state"><span class="emoji">🗂️</span>Ainda não guardaste nenhuma semana.</div>`;
   }
-  const sorted = [...archive].sort((a, b) => b.savedAt.localeCompare(a.savedAt));
+
+  const years = Array.from(new Set(archive.filter((e) => e.week).map((e) => e.week.slice(0, 4)))).sort().reverse();
+  const monthOptions = MONTH_NAMES_PT.map((m, i) => {
+    const v = String(i + 1).padStart(2, "0");
+    return `<option value="${v}" ${plannerArchiveFilterMonth === v ? "selected" : ""}>${m}</option>`;
+  }).join("");
+  const yearOptions = years.map((y) => `<option value="${y}" ${plannerArchiveFilterYear === y ? "selected" : ""}>${y}</option>`).join("");
+
+  const filtersHtml = `
+    <div class="archive-filters">
+      <select class="archive-month-filter">
+        <option value="">Mês (todos)</option>
+        ${monthOptions}
+      </select>
+      <select class="archive-year-filter">
+        <option value="">Ano (todos)</option>
+        ${yearOptions}
+      </select>
+      <input type="text" class="archive-search" placeholder="Procurar prato, nota..." value="${escapeHtml(plannerArchiveSearchQuery)}" autocomplete="off" />
+    </div>
+  `;
+
+  const filtered = archive.filter((entry) => {
+    if (plannerArchiveFilterMonth || plannerArchiveFilterYear) {
+      if (!entry.week) return false;
+      const [y, mo] = entry.week.split("-");
+      if (plannerArchiveFilterYear && y !== plannerArchiveFilterYear) return false;
+      if (plannerArchiveFilterMonth && mo !== plannerArchiveFilterMonth) return false;
+    }
+    if (plannerArchiveSearchQuery) {
+      if (!plannerArchiveEntryText(entry).includes(plannerArchiveSearchQuery.toLowerCase())) return false;
+    }
+    return true;
+  });
+
+  const sorted = filtered.sort((a, b) => b.savedAt.localeCompare(a.savedAt));
+
+  if (sorted.length === 0) {
+    return `${filtersHtml}<div class="empty-state"><span class="emoji">🔍</span>Nenhuma semana encontrada com estes filtros.</div>`;
+  }
+
   const cards = sorted.map((entry) => `
     <div class="archive-card">
       <div class="archive-card-head">
@@ -251,7 +317,7 @@ function plannerArchiveListHtml() {
       ${plannerArchiveOpenId === entry.id ? `<div class="archive-card-body">${plannerFormHtml(entry, true)}</div>` : ""}
     </div>
   `).join("");
-  return `<div class="archive-list">${cards}</div>`;
+  return `${filtersHtml}<div class="archive-list">${cards}</div>`;
 }
 
 function renderPlanner() {
@@ -548,7 +614,36 @@ function bindPlannerEvents() {
     });
   }
 
-  // archive view
+  // archive view: month/year filter + search
+  const archiveMonthFilter = root.querySelector(".archive-month-filter");
+  if (archiveMonthFilter) {
+    archiveMonthFilter.addEventListener("change", () => {
+      plannerArchiveFilterMonth = archiveMonthFilter.value;
+      router();
+    });
+  }
+  const archiveYearFilter = root.querySelector(".archive-year-filter");
+  if (archiveYearFilter) {
+    archiveYearFilter.addEventListener("change", () => {
+      plannerArchiveFilterYear = archiveYearFilter.value;
+      router();
+    });
+  }
+  const archiveSearch = root.querySelector(".archive-search");
+  if (archiveSearch) {
+    archiveSearch.addEventListener("input", () => {
+      plannerArchiveSearchQuery = archiveSearch.value;
+      plannerArchiveSearchWasFocused = true;
+      router();
+    });
+    if (plannerArchiveSearchWasFocused) {
+      const val = archiveSearch.value;
+      archiveSearch.focus();
+      archiveSearch.setSelectionRange(val.length, val.length);
+      plannerArchiveSearchWasFocused = false;
+    }
+  }
+
   root.querySelectorAll(".archive-toggle-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const id = btn.dataset.id;
