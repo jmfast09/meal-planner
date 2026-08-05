@@ -214,7 +214,7 @@ function plannerFormHtml(draft, readOnly) {
 
   const weeklyRows = PLANNER_DAYS.map((day) => `
     <div class="weekly-row">
-      <div class="day-label">${day.label}</div>
+      <div class="day-label"><span class="day-label-full">${day.label}</span><span class="day-label-short">${day.short}</span></div>
       ${plannerGridCellHtml(day, "almoco", draft, readOnly)}
       ${plannerGridCellHtml(day, "jantar", draft, readOnly)}
     </div>

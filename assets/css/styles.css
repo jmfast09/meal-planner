@@ -823,6 +823,7 @@ body.cat-planner  { --accent: #F5A572; --accent-dark: #F59E72; --light: #FFF1E8;
   color: var(--accent-dark);
   padding: 8px 0;
 }
+.day-label-short { display: none; }
 .grid-cell {
   position: relative;
   display: flex;
@@ -976,6 +977,8 @@ body.cat-planner  { --accent: #F5A572; --accent-dark: #F59E72; --light: #FFF1E8;
   .planner-page { padding-left: 20px; padding-right: 20px; }
   .weekly-head, .weekly-row { grid-template-columns: 38px 1fr 1fr; }
   .day-label { font-size: 12px; padding: 6px 0; }
+  .day-label-full { display: none; }
+  .day-label-short { display: inline; }
   .menu-row-label { width: 74px; font-size: 11px; padding-left: 12px; }
   .tupperware-icon { width: 44px; height: 44px; }
   .grid-textarea, .menu-dish-input, .menu-doses-input, .menu-doses-total { font-size: 13px; }

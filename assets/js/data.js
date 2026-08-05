@@ -97,16 +97,16 @@ const PLANNER_TAB = {
 /* Categories shown as rows in the "Menu da semana" table (Sides excluded — no doses). */
 const PLANNER_MENU_CATEGORIES = ["bake", "pasta", "classics", "world", "healthy", "easy"];
 
-/* Days of the weekly grid, in display order (starts Saturday). Weekdays get the
+/* Days of the weekly grid, in display order (starts Sunday, ends Saturday). Weekdays get the
    tupperware selector on the Almoço cell; tupperwareDefault sets its starting count. */
 const PLANNER_DAYS = [
-  { key: "sabado", label: "SÁBADO", weekday: false },
-  { key: "domingo", label: "DOMINGO", weekday: false },
-  { key: "segunda", label: "SEGUNDA", weekday: true, tupperwareDefault: 0 },
-  { key: "terca", label: "TERÇA", weekday: true, tupperwareDefault: 0 },
-  { key: "quarta", label: "QUARTA", weekday: true, tupperwareDefault: 1 },
-  { key: "quinta", label: "QUINTA", weekday: true, tupperwareDefault: 1 },
-  { key: "sexta", label: "SEXTA", weekday: true, tupperwareDefault: 0 },
+  { key: "domingo", label: "DOMINGO", short: "DOM", weekday: false },
+  { key: "segunda", label: "SEGUNDA", short: "SEG", weekday: true, tupperwareDefault: 0 },
+  { key: "terca", label: "TERÇA", short: "TER", weekday: true, tupperwareDefault: 0 },
+  { key: "quarta", label: "QUARTA", short: "QUA", weekday: true, tupperwareDefault: 1 },
+  { key: "quinta", label: "QUINTA", short: "QUI", weekday: true, tupperwareDefault: 1 },
+  { key: "sexta", label: "SEXTA", short: "SEX", weekday: true, tupperwareDefault: 0 },
+  { key: "sabado", label: "SÁBADO", short: "SÁB", weekday: false },
 ];
 
 const RECIPES = {
