@@ -741,7 +741,7 @@ body.cat-planner  { --accent: #F5A572; --accent-dark: #F59E72; --light: #FFF1E8;
   height: 100%;
   border: none;
   background: transparent;
-  padding: 10px 38px 10px 12px;
+  padding: 10px 38px 10px 34px;
   font-family: var(--font-body);
   font-size: 15px;
   font-weight: 700;
@@ -749,6 +749,21 @@ body.cat-planner  { --accent: #F5A572; --accent-dark: #F59E72; --light: #FFF1E8;
   color: var(--row-text, var(--ink));
 }
 .menu-dish-input:focus { outline: none; }
+.menu-row-open {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--row-text, var(--ink));
+  opacity: 0.55;
+  cursor: pointer;
+}
+.menu-row-open[hidden] { display: none; }
+.menu-row-open svg { width: 16px; height: 16px; }
+.menu-row-open:hover { opacity: 1; }
 .menu-suggestions {
   position: absolute;
   top: 100%;

@@ -74,6 +74,16 @@ function plannerFindWeeksForDish(dishName) {
   return matches.sort((a, b) => (b.week || "").localeCompare(a.week || "") || b.savedAt.localeCompare(a.savedAt));
 }
 
+/* Recipe slug for a dish typed into the Menu da semana table, if it matches an
+   existing recipe in that category (categories without recipe pages, e.g. Easy, return null). */
+function plannerRecipeSlugForDish(categorySlug, dishName) {
+  const name = (dishName || "").trim().toLowerCase();
+  if (!name) return null;
+  const list = RECIPES[categorySlug] || [];
+  const match = list.find((r) => r.name.toLowerCase() === name);
+  return match ? match.slug : null;
+}
+
 function plannerDishOptions(categorySlug) {
   if (categorySlug === "easy") {
     return SIMPLE_LISTS.easy.items.map((it) => ({ name: it.name, doses: it.value }));
@@ -183,6 +193,15 @@ function plannerGridCellHtml(day, meal, draft, readOnly) {
   `;
 }
 
+function plannerMenuRowOpenLinkHtml(slug, dishName) {
+  const recipeSlug = plannerRecipeSlugForDish(slug, dishName);
+  return `
+    <a class="menu-row-open" data-category="${slug}" href="${recipeSlug ? `#/cat/${slug}/${recipeSlug}` : "#"}" ${recipeSlug ? "" : "hidden"} aria-label="Ver receita" title="Ver receita">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+    </a>
+  `;
+}
+
 function plannerMenuRowHtml(slug, draft, readOnly) {
   const cat = findCategory(slug);
   const row = draft.menu[slug] || { dish: "", doses: "" };
@@ -190,6 +209,7 @@ function plannerMenuRowHtml(slug, draft, readOnly) {
     <div class="menu-row" style="--row-bg:${cat.pastel};--row-text:${cat.colorDark}">
       <span class="menu-row-label" draggable="${readOnly ? "false" : "true"}" data-category="${slug}">${cat.short}</span>
       <div class="menu-row-field">
+        ${plannerMenuRowOpenLinkHtml(slug, row.dish)}
         <input type="text" class="menu-dish-input" data-category="${slug}" value="${escapeHtml(row.dish)}" ${readOnly ? "readonly" : ""} autocomplete="off" />
         ${readOnly ? "" : `<div class="menu-suggestions" data-category="${slug}" hidden></div>`}
         ${readOnly ? "" : `<button type="button" class="menu-row-generate" data-category="${slug}" aria-label="Gerar prato aleatório"><img src="assets/img/icons/sparkle-${slug}.svg" alt="" /></button>`}
@@ -422,6 +442,19 @@ function bindPlannerEvents() {
   const notesTextarea = root.querySelector(".notes-textarea");
   if (notesTextarea) notesTextarea.addEventListener("input", () => { draft.notes = notesTextarea.value; persist(); });
 
+  // menu rows: keep each row's "view recipe" link in sync with its dish input
+  function updateMenuRowOpenLink(slug) {
+    const openLink = root.querySelector(`.menu-row-open[data-category="${slug}"]`);
+    if (!openLink) return;
+    const recipeSlug = plannerRecipeSlugForDish(slug, draft.menu[slug].dish);
+    if (recipeSlug) {
+      openLink.href = `#/cat/${slug}/${recipeSlug}`;
+      openLink.hidden = false;
+    } else {
+      openLink.hidden = true;
+    }
+  }
+
   // menu rows: autocomplete
   root.querySelectorAll(".menu-dish-input").forEach((input) => {
     const slug = input.dataset.category;
@@ -431,6 +464,7 @@ function bindPlannerEvents() {
     input.addEventListener("input", () => {
       draft.menu[slug].dish = input.value;
       persist();
+      updateMenuRowOpenLink(slug);
 
       const q = input.value.trim().toLowerCase();
       if (!suggestionsBox) return;
@@ -460,6 +494,7 @@ function bindPlannerEvents() {
           draft.menu[slug].doses = item.dataset.doses;
         }
         persist();
+        updateMenuRowOpenLink(slug);
         suggestionsBox.hidden = true;
         const totalEl = root.querySelector(".menu-doses-total");
         if (totalEl) totalEl.textContent = plannerTotalDoses(draft);
@@ -499,6 +534,7 @@ function bindPlannerEvents() {
           draft.menu[slug].doses = pick.doses;
         }
         persist();
+        updateMenuRowOpenLink(slug);
         const totalEl = root.querySelector(".menu-doses-total");
         if (totalEl) totalEl.textContent = plannerTotalDoses(draft);
       });
@@ -518,6 +554,7 @@ function bindPlannerEvents() {
         const rowDoses = root.querySelector(`.menu-doses-input[data-category="${slug}"]`);
         if (rowInput) rowInput.value = pick.name;
         if (rowDoses) rowDoses.value = pick.doses;
+        updateMenuRowOpenLink(slug);
       });
       persist();
       const totalEl = root.querySelector(".menu-doses-total");
