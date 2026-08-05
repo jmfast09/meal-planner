@@ -15,6 +15,8 @@ function plannerEmptyDraft() {
     grid[d.key] = { almoco: "", jantar: "" };
     if (d.weekday) grid[d.key].tupperware = d.tupperwareDefault;
   });
+  grid.terca.almoco = "Salada";
+  grid.sexta.jantar = "Uber eats";
 
   return { week: "", portions: "20", notes: "", menu, grid };
 }
@@ -62,6 +64,13 @@ function plannerDishOptions(categorySlug) {
   return list.map((r) => ({ name: r.name, doses: String(r.doses) }));
 }
 
+function plannerTotalDoses(draft) {
+  return PLANNER_MENU_CATEGORIES.reduce((sum, slug) => {
+    const n = parseInt((draft.menu[slug] && draft.menu[slug].doses) || "", 10);
+    return sum + (Number.isNaN(n) ? 0 : n);
+  }, 0);
+}
+
 function plannerFormatWeekLabel(iso) {
   if (!iso) return "Semana sem data";
   const [y, m, d] = iso.split("-");
@@ -106,8 +115,8 @@ function plannerMenuRowHtml(slug, draft, readOnly) {
   const cat = findCategory(slug);
   const row = draft.menu[slug] || { dish: "", doses: "" };
   return `
-    <div class="menu-row" style="--row-bg:${cat.pastel}">
-      <span class="menu-row-label" draggable="${readOnly ? "false" : "true"}" data-category="${slug}">${cat.short}:</span>
+    <div class="menu-row" style="--row-bg:${cat.pastel};--row-text:${cat.colorDark}">
+      <span class="menu-row-label" draggable="${readOnly ? "false" : "true"}" data-category="${slug}">${cat.short}</span>
       <div class="menu-row-field">
         <input type="text" class="menu-dish-input" data-category="${slug}" value="${escapeHtml(row.dish)}" ${readOnly ? "readonly" : ""} autocomplete="off" />
         ${readOnly ? "" : `<div class="menu-suggestions" data-category="${slug}" hidden></div>`}
@@ -117,8 +126,18 @@ function plannerMenuRowHtml(slug, draft, readOnly) {
   `;
 }
 
+function plannerTotalRowHtml(draft) {
+  return `
+    <div class="menu-row menu-row-total">
+      <span class="menu-row-label">TOTAL</span>
+      <div class="menu-row-field"></div>
+      <span class="menu-doses-total">${plannerTotalDoses(draft)}</span>
+    </div>
+  `;
+}
+
 function plannerFormHtml(draft, readOnly) {
-  const menuRows = PLANNER_MENU_CATEGORIES.map((slug) => plannerMenuRowHtml(slug, draft, readOnly)).join("");
+  const menuRows = PLANNER_MENU_CATEGORIES.map((slug) => plannerMenuRowHtml(slug, draft, readOnly)).join("") + plannerTotalRowHtml(draft);
 
   const weeklyRows = PLANNER_DAYS.map((day) => `
     <div class="weekly-row">
@@ -308,11 +327,18 @@ function bindPlannerEvents() {
         }
         persist();
         suggestionsBox.hidden = true;
+        const totalEl = root.querySelector(".menu-doses-total");
+        if (totalEl) totalEl.textContent = plannerTotalDoses(draft);
       });
     }
 
     if (dosesInput) {
-      dosesInput.addEventListener("input", () => { draft.menu[slug].doses = dosesInput.value; persist(); });
+      dosesInput.addEventListener("input", () => {
+        draft.menu[slug].doses = dosesInput.value;
+        persist();
+        const totalEl = root.querySelector(".menu-doses-total");
+        if (totalEl) totalEl.textContent = plannerTotalDoses(draft);
+      });
     }
 
     // drag source: the colored category label carries whatever dish is currently typed
