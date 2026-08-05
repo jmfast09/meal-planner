@@ -19,11 +19,15 @@ function escapeHtml(str) {
 const PLATE_ICON = `<svg width="34" height="34" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="24" cy="24" r="19"/><circle cx="24" cy="24" r="11"/></svg>`;
 
 function tabbarHtml(activeSlug) {
+  const plannerActive = activeSlug === "planner" ? "is-active" : "";
+  const plannerPill = `<a class="tabpill tabpill-planner ${plannerActive}" style="--pill-bg:${PLANNER_TAB.pastel};--pill-text:${PLANNER_TAB.colorDark}" href="#/planner">${PLANNER_TAB.short}</a>`;
+
   const pills = CATEGORIES.map((c) => {
     const active = c.slug === activeSlug ? "is-active" : "";
     return `<a class="tabpill ${active}" style="--pill-bg:${c.pastel};--pill-text:${c.colorDark}" href="#/cat/${c.slug}">${c.short}</a>`;
   }).join("");
-  return `<div class="tabbar-wrap"><nav class="tabbar">${pills}</nav></div>`;
+
+  return `<div class="tabbar-wrap"><nav class="tabbar">${plannerPill}${pills}</nav></div>`;
 }
 
 function renderHome() {
@@ -278,6 +282,8 @@ function renderNotFound() {
   `;
 }
 
+let lastRouterHash = null;
+
 function router() {
   const hash = location.hash.replace(/^#/, "") || "/";
   const parts = hash.split("/").filter(Boolean);
@@ -286,6 +292,8 @@ function router() {
   let html;
   if (parts.length === 0) {
     html = renderHome();
+  } else if (parts[0] === "planner") {
+    html = renderPlanner();
   } else if (parts[0] === "cat" && parts[1] && !parts[2]) {
     html = renderCategory(parts[1]);
   } else if (parts[0] === "cat" && parts[1] && parts[2]) {
@@ -295,7 +303,11 @@ function router() {
   }
 
   app.innerHTML = html;
-  window.scrollTo(0, 0);
+
+  if (hash !== lastRouterHash) window.scrollTo(0, 0);
+  lastRouterHash = hash;
+
+  if (parts[0] === "planner") bindPlannerEvents();
 }
 
 // Delegated listener: persists checklist state across visits (per recipe step).

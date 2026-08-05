@@ -82,6 +82,30 @@ const CATEGORIES = [
   },
 ];
 
+/* Weekly meal planner — first tab, kept separate from CATEGORIES since it
+   isn't a recipe category (no cover card, no recipe list). */
+const PLANNER_TAB = {
+  slug: "planner",
+  short: "PLANNER",
+  pastel: "#FFD6C2",
+  colorDark: "#F59E72",
+};
+
+/* Categories shown as rows in the "Menu da semana" table (Sides excluded — no doses). */
+const PLANNER_MENU_CATEGORIES = ["bake", "pasta", "classics", "world", "healthy", "easy"];
+
+/* Days of the weekly grid, in display order (starts Saturday). Weekdays get the
+   tupperware selector on the Almoço cell; tupperwareDefault sets its starting count. */
+const PLANNER_DAYS = [
+  { key: "sabado", label: "SÁBADO", weekday: false },
+  { key: "domingo", label: "DOMINGO", weekday: false },
+  { key: "segunda", label: "SEGUNDA", weekday: true, tupperwareDefault: 0 },
+  { key: "terca", label: "TERÇA", weekday: true, tupperwareDefault: 0 },
+  { key: "quarta", label: "QUARTA", weekday: true, tupperwareDefault: 1 },
+  { key: "quinta", label: "QUINTA", weekday: true, tupperwareDefault: 1 },
+  { key: "sexta", label: "SEXTA", weekday: true, tupperwareDefault: 0 },
+];
+
 const RECIPES = {
   bake: [
     {
