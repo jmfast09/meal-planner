@@ -242,7 +242,7 @@ function recipeHistorySectionHtml(recipe) {
           <select class="history-year-filter"><option value="">Ano (todos)</option>${yearOptions}</select>
         </div>
         <ul class="history-list"></ul>
-        <div class="browser-only-note">Apenas visível no Web browser</div>
+        <div class="browser-only-note">Estes dados não sincronizam entre dispositivos — ficam guardados só neste browser.</div>
       </div>
     </div>
   `;

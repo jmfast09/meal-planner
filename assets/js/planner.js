@@ -271,7 +271,7 @@ function plannerArchiveEntryText(entry) {
 function plannerArchiveListHtml() {
   const archive = plannerLoadArchive();
   if (archive.length === 0) {
-    return `<div class="empty-state"><span class="emoji">🗂️</span>Ainda não guardaste nenhuma semana.</div><div class="browser-only-note">Apenas visível no Web browser</div>`;
+    return `<div class="empty-state"><span class="emoji">🗂️</span>Ainda não guardaste nenhuma semana.</div><div class="browser-only-note">Estes dados não sincronizam entre dispositivos — ficam guardados só neste browser.</div>`;
   }
 
   const years = Array.from(new Set(archive.filter((e) => e.week).map((e) => e.week.slice(0, 4)))).sort().reverse();
@@ -311,7 +311,7 @@ function plannerArchiveListHtml() {
   const sorted = filtered.sort((a, b) => b.savedAt.localeCompare(a.savedAt));
 
   if (sorted.length === 0) {
-    return `${filtersHtml}<div class="empty-state"><span class="emoji">🔍</span>Nenhuma semana encontrada com estes filtros.</div><div class="browser-only-note">Apenas visível no Web browser</div>`;
+    return `${filtersHtml}<div class="empty-state"><span class="emoji">🔍</span>Nenhuma semana encontrada com estes filtros.</div><div class="browser-only-note">Estes dados não sincronizam entre dispositivos — ficam guardados só neste browser.</div>`;
   }
 
   const cards = sorted.map((entry) => `
@@ -330,7 +330,7 @@ function plannerArchiveListHtml() {
       ${plannerArchiveOpenId === entry.id ? `<div class="archive-card-body">${plannerFormHtml(entry, true)}</div>` : ""}
     </div>
   `).join("");
-  return `${filtersHtml}<div class="archive-list">${cards}</div><div class="browser-only-note">Apenas visível no Web browser</div>`;
+  return `${filtersHtml}<div class="archive-list">${cards}</div><div class="browser-only-note">Estes dados não sincronizam entre dispositivos — ficam guardados só neste browser.</div>`;
 }
 
 function renderPlanner() {
