@@ -401,6 +401,7 @@ body.cat-planner  { --accent: #F5A572; --accent-dark: #F59E72; --light: #FFF1E8;
   font-weight: 400;
   margin: 0;
   color: #2b2b2b;
+  text-wrap: balance;
 }
 
 .recipe-meta {
@@ -964,7 +965,7 @@ body.cat-planner  { --accent: #F5A572; --accent-dark: #F59E72; --light: #FFF1E8;
   cursor: pointer;
 }
 .archive-delete-btn { border-color: #c0504d; color: #c0504d; }
-.archive-copy-btn { border-color: #E0919E; color: #E0919E; }
+.archive-copy-btn { border-color: #F884AF; color: #F884AF; }
 .archive-card-body { padding: 18px; background: var(--paper); }
 .archive-card-body .planner-layout { margin-bottom: 18px; }
 
