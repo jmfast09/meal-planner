@@ -85,19 +85,18 @@ const CATEGORIES = [
 
 const MONTH_NAMES_PT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
-/* Per-browser recipe content overrides (name/doses/tempo/ingredients/steps/notas),
-   so recipe text can be edited in place without touching the shipped data. */
-function recipeEditKey(catSlug, recipeSlug, field) {
-  return `mealplanner:editrecipe:${catSlug}:${recipeSlug}:${field}`;
-}
-
+/* Shared (cross-device) recipe content overrides (name/doses/tempo/ingredients/steps/notas),
+   so recipe text can be edited in place without touching the shipped data. Synced live via
+   Firestore — see assets/js/firebase-sync.js, which maintains window.__recipeEditsCache and
+   exposes window.saveRecipeEditRemote(). */
 function getRecipeEdit(catSlug, recipeSlug, field, fallback) {
-  const raw = localStorage.getItem(recipeEditKey(catSlug, recipeSlug, field));
-  return raw === null ? fallback : raw;
+  const cache = window.__recipeEditsCache;
+  const value = cache && cache[catSlug] && cache[catSlug][recipeSlug] && cache[catSlug][recipeSlug][field];
+  return value !== undefined ? value : fallback;
 }
 
 function saveRecipeEdit(catSlug, recipeSlug, field, value) {
-  localStorage.setItem(recipeEditKey(catSlug, recipeSlug, field), value);
+  if (window.saveRecipeEditRemote) window.saveRecipeEditRemote(catSlug, recipeSlug, field, value);
 }
 
 /* Returns a copy of the recipe with any saved user edits applied on top of the built-in data. */
