@@ -80,7 +80,7 @@ function plannerRecipeSlugForDish(categorySlug, dishName) {
   const name = (dishName || "").trim().toLowerCase();
   if (!name) return null;
   const list = RECIPES[categorySlug] || [];
-  const match = list.find((r) => r.name.toLowerCase() === name);
+  const match = list.find((r) => getEffectiveRecipe(categorySlug, r).name.toLowerCase() === name);
   return match ? match.slug : null;
 }
 
@@ -89,7 +89,10 @@ function plannerDishOptions(categorySlug) {
     return SIMPLE_LISTS.easy.items.map((it) => ({ name: it.name, doses: it.value }));
   }
   const list = RECIPES[categorySlug] || [];
-  return list.map((r) => ({ name: r.name, doses: String(r.doses) }));
+  return list.map((r) => {
+    const eff = getEffectiveRecipe(categorySlug, r);
+    return { name: eff.name, doses: String(eff.doses) };
+  });
 }
 
 function plannerTotalDoses(draft) {

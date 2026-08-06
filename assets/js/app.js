@@ -72,7 +72,9 @@ function recipeRowIconHtml(recipe) {
 }
 
 function renderCategoryList(cat) {
-  const items = [...(RECIPES[cat.slug] || [])].sort((a, b) => a.name.localeCompare(b.name, "pt"));
+  const items = (RECIPES[cat.slug] || [])
+    .map((r) => getEffectiveRecipe(cat.slug, r))
+    .sort((a, b) => a.name.localeCompare(b.name, "pt"));
   let bodyHtml;
 
   if (items.length === 0) {
@@ -86,12 +88,14 @@ function renderCategoryList(cat) {
     const rows = items.map((r) => `
       <tr class="is-link" data-search-name="${escapeHtml(r.name)}">
         <td>
-          <a class="recipe-row-link" href="#/cat/${cat.slug}/${r.slug}">
-            ${recipeRowIconHtml(r)}
-            <span>${escapeHtml(r.name)}</span>
-          </a>
+          <div class="recipe-row-link">
+            <a class="recipe-row-icon-link" href="#/cat/${cat.slug}/${r.slug}" aria-label="Ver receita">
+              ${recipeRowIconHtml(r)}
+            </a>
+            <span class="recipe-row-name" contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${r.slug}" data-field="name">${escapeHtml(r.name)}</span>
+          </div>
         </td>
-        <td>${r.doses}</td>
+        <td class="recipe-row-doses" contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${r.slug}" data-field="doses">${escapeHtml(String(r.doses))}</td>
       </tr>
     `).join("");
     bodyHtml = `
@@ -202,8 +206,11 @@ function renderCategory(slug) {
   `;
 }
 
-function ingredientListHtml(items) {
-  return `<ul class="ingredient-list">${items.map((i) => `<li>${escapeHtml(i)}</li>`).join("")}</ul>`;
+function ingredientListHtml(items, editCtx) {
+  return `<ul class="ingredient-list">${items.map((i, idx) => {
+    if (!editCtx) return `<li>${escapeHtml(i)}</li>`;
+    return `<li contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${editCtx.cat}" data-recipe="${editCtx.recipe}" data-field="${editCtx.prefix}${idx}">${escapeHtml(i)}</li>`;
+  }).join("")}</ul>`;
 }
 
 function prepChecklistHtml(catSlug, recipeSlug, steps) {
@@ -212,11 +219,13 @@ function prepChecklistHtml(catSlug, recipeSlug, steps) {
     const checked = localStorage.getItem(key) === "1" ? "checked" : "";
     return `
       <li>
-        <label class="prep-step">
-          <input type="checkbox" data-prep-key="${key}" ${checked} />
-          <span class="prep-step-num">${i + 1}.</span>
-          <span class="prep-step-text">${escapeHtml(step)}</span>
-        </label>
+        <div class="prep-step">
+          <label class="prep-step-check">
+            <input type="checkbox" data-prep-key="${key}" ${checked} />
+            <span class="prep-step-num">${i + 1}.</span>
+          </label>
+          <span class="prep-step-text" contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${catSlug}" data-recipe="${recipeSlug}" data-field="prep${i}">${escapeHtml(step)}</span>
+        </div>
       </li>
     `;
   }).join("");
@@ -279,23 +288,24 @@ function bindRecipeHistory(recipe) {
 
 function renderRecipe(catSlug, recipeSlug) {
   const cat = findCategory(catSlug);
-  const recipe = findRecipe(catSlug, recipeSlug);
-  if (!cat || !recipe) return renderNotFound();
+  const rawRecipe = findRecipe(catSlug, recipeSlug);
+  if (!cat || !rawRecipe) return renderNotFound();
+  const recipe = getEffectiveRecipe(catSlug, rawRecipe);
   document.body.className = "cat-" + cat.slug;
 
   const notasHtml = recipe.notas
     ? `
       <div class="box notas-box">
         <div class="box-header">Notas</div>
-        <div class="box-body">${escapeHtml(recipe.notas)}</div>
+        <div class="box-body" contenteditable="true" spellcheck="false" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="notas">${escapeHtml(recipe.notas)}</div>
       </div>
     `
     : "";
 
   const extraIngredients = recipe.ingredientsExtra
     ? `
-      <div class="ingredient-subtitle">${escapeHtml(recipe.ingredientsExtra.title)}</div>
-      ${ingredientListHtml(recipe.ingredientsExtra.items)}
+      <div class="ingredient-subtitle" contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="ingredientsExtraTitle">${escapeHtml(recipe.ingredientsExtra.title)}</div>
+      ${ingredientListHtml(recipe.ingredientsExtra.items, { cat: cat.slug, recipe: recipe.slug, prefix: "ingredientExtra" })}
     `
     : "";
 
@@ -322,12 +332,12 @@ function renderRecipe(catSlug, recipeSlug) {
             ${recipe.icon
               ? `<img class="recipe-dish-icon" src="assets/img/icons/recipes/${recipe.icon}.svg" alt="" />`
               : `<div class="recipe-icon">${PLATE_ICON}</div>`}
-            <h1>${escapeHtml(recipe.name)}</h1>
+            <h1 contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="name">${escapeHtml(recipe.name)}</h1>
           </div>
 
           <div class="recipe-meta">
-            <span>DOSES: ${recipe.doses}</span>
-            <span>TEMPO DE PREP: ${escapeHtml(recipe.tempo)}${tempoFlag}</span>
+            <span>DOSES: <span contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="doses">${escapeHtml(String(recipe.doses))}</span></span>
+            <span>TEMPO DE PREP: <span contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="tempo">${escapeHtml(recipe.tempo)}</span>${tempoFlag}</span>
           </div>
 
           <div class="recipe-grid">
@@ -335,7 +345,7 @@ function renderRecipe(catSlug, recipeSlug) {
               <div class="box">
                 <div class="box-header">Ingredientes</div>
                 <div class="box-body">
-                  ${ingredientListHtml(recipe.ingredients)}
+                  ${ingredientListHtml(recipe.ingredients, { cat: cat.slug, recipe: recipe.slug, prefix: "ingredient" })}
                   ${extraIngredients}
                 </div>
               </div>
@@ -400,7 +410,7 @@ function router() {
   else if (parts[0] === "cat" && parts[1] && !parts[2]) bindCategorySearch();
   else if (parts[0] === "cat" && parts[1] && parts[2]) {
     const recipe = findRecipe(parts[1], parts[2]);
-    if (recipe) bindRecipeHistory(recipe);
+    if (recipe) bindRecipeHistory(getEffectiveRecipe(parts[1], recipe));
   }
 }
 
@@ -411,6 +421,31 @@ document.addEventListener("change", (e) => {
     const key = input.dataset.prepKey;
     if (input.checked) localStorage.setItem(key, "1");
     else localStorage.removeItem(key);
+  }
+});
+
+// Delegated listeners: persist edits made directly on recipe text (name, doses,
+// tempo, ingredients, prep steps, notas) as the user types, on all recipe pages.
+document.addEventListener("focusout", (e) => {
+  const el = e.target.closest("[data-field]");
+  if (!el || !el.isContentEditable) return;
+  const { cat, recipe, field } = el.dataset;
+  if (!cat || !recipe || !field) return;
+  // textContent for single-line fields avoids CSS text-transform (e.g. the
+  // uppercase recipe title) leaking into the saved value; innerText is only
+  // needed for multi-line fields (Notas) to preserve line breaks as \n.
+  const raw = el.hasAttribute("data-singleline") ? el.textContent : el.innerText;
+  const value = raw.replace(/\u00a0/g, " ").trim();
+  saveRecipeEdit(cat, recipe, field, value);
+  router();
+});
+
+document.addEventListener("keydown", (e) => {
+  const el = e.target.closest("[data-field][data-singleline]");
+  if (!el) return;
+  if (e.key === "Enter") {
+    e.preventDefault();
+    el.blur();
   }
 });
 

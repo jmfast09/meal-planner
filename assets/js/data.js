@@ -85,6 +85,49 @@ const CATEGORIES = [
 
 const MONTH_NAMES_PT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
+/* Per-browser recipe content overrides (name/doses/tempo/ingredients/steps/notas),
+   so recipe text can be edited in place without touching the shipped data. */
+function recipeEditKey(catSlug, recipeSlug, field) {
+  return `mealplanner:editrecipe:${catSlug}:${recipeSlug}:${field}`;
+}
+
+function getRecipeEdit(catSlug, recipeSlug, field, fallback) {
+  const raw = localStorage.getItem(recipeEditKey(catSlug, recipeSlug, field));
+  return raw === null ? fallback : raw;
+}
+
+function saveRecipeEdit(catSlug, recipeSlug, field, value) {
+  localStorage.setItem(recipeEditKey(catSlug, recipeSlug, field), value);
+}
+
+/* Returns a copy of the recipe with any saved user edits applied on top of the built-in data. */
+function getEffectiveRecipe(catSlug, recipe) {
+  if (!recipe) return recipe;
+  const slug = recipe.slug;
+  const eff = { ...recipe };
+  eff.name = getRecipeEdit(catSlug, slug, "name", recipe.name);
+  eff.doses = getRecipeEdit(catSlug, slug, "doses", String(recipe.doses));
+  if (recipe.tempo !== undefined) {
+    eff.tempo = getRecipeEdit(catSlug, slug, "tempo", recipe.tempo);
+  }
+  if (recipe.ingredients) {
+    eff.ingredients = recipe.ingredients.map((ing, i) => getRecipeEdit(catSlug, slug, `ingredient${i}`, ing));
+  }
+  if (recipe.ingredientsExtra) {
+    eff.ingredientsExtra = {
+      title: getRecipeEdit(catSlug, slug, "ingredientsExtraTitle", recipe.ingredientsExtra.title),
+      items: recipe.ingredientsExtra.items.map((it, i) => getRecipeEdit(catSlug, slug, `ingredientExtra${i}`, it)),
+    };
+  }
+  if (recipe.preparacao) {
+    eff.preparacao = recipe.preparacao.map((step, i) => getRecipeEdit(catSlug, slug, `prep${i}`, step));
+  }
+  if (recipe.notas !== undefined) {
+    eff.notas = getRecipeEdit(catSlug, slug, "notas", recipe.notas);
+  }
+  return eff;
+}
+
 /* Weekly meal planner — first tab, kept separate from CATEGORIES since it
    isn't a recipe category (no cover card, no recipe list). */
 const PLANNER_TAB = {
