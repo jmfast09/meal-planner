@@ -51,3 +51,60 @@ window.saveRecipeEditRemote = function (catSlug, recipeSlug, field, value) {
     alert("Não foi possível guardar a alteração (sem ligação?). Tenta novamente.");
   });
 };
+
+// ---------- Planner: current-week draft (shared, debounced writes) ----------
+// The draft is typed keystroke-by-keystroke, so we don't force a re-render on every
+// remote update (that would steal focus mid-typing) — only on the very first snapshot,
+// so a freshly loaded page shows whatever was last saved. Later updates (ours or a
+// remote device's) just refresh the cache; the next natural render picks them up.
+const plannerDraftRef = doc(db, "mealPlanner", "plannerDraft");
+window.__plannerDraftCache = null;
+let plannerDraftFirstSnapshotHandled = false;
+let plannerDraftSaveTimer = null;
+
+onSnapshot(
+  plannerDraftRef,
+  (snap) => {
+    window.__plannerDraftCache = snap.exists() ? snap.data() : null;
+    if (!plannerDraftFirstSnapshotHandled) {
+      plannerDraftFirstSnapshotHandled = true;
+      if (typeof router === "function") router();
+    }
+  },
+  (err) => {
+    console.error("Firestore planner draft sync error:", err);
+  }
+);
+
+window.savePlannerDraftRemote = function (draft) {
+  window.__plannerDraftCache = draft; // optimistic
+  clearTimeout(plannerDraftSaveTimer);
+  plannerDraftSaveTimer = setTimeout(() => {
+    setDoc(plannerDraftRef, draft).catch((err) => {
+      console.error("Failed to save planner draft:", err);
+    });
+  }, 600);
+};
+
+// ---------- Planner: archive (shared, saved on discrete actions only) ----------
+const plannerArchiveRef = doc(db, "mealPlanner", "plannerArchive");
+window.__plannerArchiveCache = null;
+
+onSnapshot(
+  plannerArchiveRef,
+  (snap) => {
+    window.__plannerArchiveCache = snap.exists() ? snap.data().list || [] : [];
+    if (typeof router === "function") router();
+  },
+  (err) => {
+    console.error("Firestore planner archive sync error:", err);
+  }
+);
+
+window.savePlannerArchiveRemote = function (list) {
+  window.__plannerArchiveCache = list; // optimistic
+  setDoc(plannerArchiveRef, { list }).catch((err) => {
+    console.error("Failed to save planner archive:", err);
+    alert("Não foi possível guardar o arquivo (sem ligação?). Tenta novamente.");
+  });
+};

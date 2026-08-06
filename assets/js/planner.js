@@ -1,7 +1,11 @@
-/* Weekly meal planner — data persistence + rendering (vanilla JS) */
-
-const PLANNER_DRAFT_KEY = "mealplanner:planner:current";
-const PLANNER_ARCHIVE_KEY = "mealplanner:planner:archive";
+/* Weekly meal planner — data persistence + rendering (vanilla JS)
+ *
+ * The current-week draft and the archive are shared across devices via Firestore
+ * (see assets/js/firebase-sync.js, which maintains window.__plannerDraftCache /
+ * window.__plannerArchiveCache and exposes window.savePlannerDraftRemote() /
+ * window.savePlannerArchiveRemote()). Loads fall back to blank/empty until the
+ * first snapshot arrives, mirroring the old localStorage "nothing saved yet" case.
+ */
 
 let plannerViewMode = "current"; // "current" | "archive"
 let plannerArchiveOpenId = null; // id of an archived week currently expanded
@@ -24,38 +28,28 @@ function plannerEmptyDraft() {
 }
 
 function plannerLoadDraft() {
-  try {
-    const raw = localStorage.getItem(PLANNER_DRAFT_KEY);
-    if (!raw) return plannerEmptyDraft();
-    const parsed = JSON.parse(raw);
-    // merge with defaults so new categories/days added later don't break old saves
-    const base = plannerEmptyDraft();
-    return {
-      ...base,
-      ...parsed,
-      menu: { ...base.menu, ...(parsed.menu || {}) },
-      grid: { ...base.grid, ...(parsed.grid || {}) },
-    };
-  } catch (e) {
-    return plannerEmptyDraft();
-  }
+  const cached = window.__plannerDraftCache;
+  if (!cached) return plannerEmptyDraft();
+  // merge with defaults so new categories/days added later don't break old saves
+  const base = plannerEmptyDraft();
+  return {
+    ...base,
+    ...cached,
+    menu: { ...base.menu, ...(cached.menu || {}) },
+    grid: { ...base.grid, ...(cached.grid || {}) },
+  };
 }
 
 function plannerSaveDraft(draft) {
-  localStorage.setItem(PLANNER_DRAFT_KEY, JSON.stringify(draft));
+  if (window.savePlannerDraftRemote) window.savePlannerDraftRemote(draft);
 }
 
 function plannerLoadArchive() {
-  try {
-    const raw = localStorage.getItem(PLANNER_ARCHIVE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch (e) {
-    return [];
-  }
+  return Array.isArray(window.__plannerArchiveCache) ? window.__plannerArchiveCache : [];
 }
 
 function plannerSaveArchive(list) {
-  localStorage.setItem(PLANNER_ARCHIVE_KEY, JSON.stringify(list));
+  if (window.savePlannerArchiveRemote) window.savePlannerArchiveRemote(list);
 }
 
 /* Weeks (from the archive) where a given dish was set in the Menu da semana table. */
@@ -294,7 +288,7 @@ function plannerArchiveEntryText(entry) {
 function plannerArchiveListHtml() {
   const archive = plannerLoadArchive();
   if (archive.length === 0) {
-    return `<div class="empty-state"><span class="emoji">🗂️</span>Ainda não guardaste nenhuma semana.</div><div class="browser-only-note">Estes dados não sincronizam entre dispositivos — ficam guardados só neste browser.</div>`;
+    return `<div class="empty-state"><span class="emoji">🗂️</span>Ainda não guardaste nenhuma semana.</div>`;
   }
 
   const years = Array.from(new Set(archive.filter((e) => e.week).map((e) => e.week.slice(0, 4)))).sort().reverse();
@@ -334,7 +328,7 @@ function plannerArchiveListHtml() {
   const sorted = filtered.sort((a, b) => b.savedAt.localeCompare(a.savedAt));
 
   if (sorted.length === 0) {
-    return `${filtersHtml}<div class="empty-state"><span class="emoji">🔍</span>Nenhuma semana encontrada com estes filtros.</div><div class="browser-only-note">Estes dados não sincronizam entre dispositivos — ficam guardados só neste browser.</div>`;
+    return `${filtersHtml}<div class="empty-state"><span class="emoji">🔍</span>Nenhuma semana encontrada com estes filtros.</div>`;
   }
 
   const cards = sorted.map((entry) => `
@@ -353,7 +347,7 @@ function plannerArchiveListHtml() {
       ${plannerArchiveOpenId === entry.id ? `<div class="archive-card-body">${plannerFormHtml(entry, true)}</div>` : ""}
     </div>
   `).join("");
-  return `${filtersHtml}<div class="archive-list">${cards}</div><div class="browser-only-note">Estes dados não sincronizam entre dispositivos — ficam guardados só neste browser.</div>`;
+  return `${filtersHtml}<div class="archive-list">${cards}</div>`;
 }
 
 function renderPlanner() {

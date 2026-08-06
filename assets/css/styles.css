@@ -1006,8 +1006,6 @@ body.cat-planner  { --accent: #F5A572; --accent-dark: #F59E72; --light: #FFF1E8;
 .archive-card-body { padding: 18px; background: var(--paper); }
 .archive-card-body .planner-layout { margin-bottom: 18px; }
 
-.browser-only-note { font-style: italic; font-size: 11px; color: var(--ink-soft); margin-top: 12px; }
-
 @media (max-width: 720px) {
   .planner-layout { grid-template-columns: 1fr; }
   .planner-page { padding-left: 20px; padding-right: 20px; }
