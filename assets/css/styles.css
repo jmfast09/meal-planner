@@ -427,6 +427,7 @@ body.cat-planner  { --accent: #F5A572; --accent-dark: #F59E72; --light: #FFF1E8;
 .recipe-icon-wrap { position: relative; display: inline-block; margin-bottom: 14px; }
 .recipe-icon-wrap .recipe-icon-preview.recipe-icon,
 .recipe-icon-wrap .recipe-icon-preview.recipe-dish-icon { margin: 0; }
+.new-recipe-icon-placeholder { border: none; }
 .recipe-icon-upload {
   position: absolute;
   bottom: -2px;

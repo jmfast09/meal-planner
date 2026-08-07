@@ -456,7 +456,7 @@ function renderNewRecipe(catSlug) {
 
           <div class="recipe-head">
             <div class="recipe-icon-wrap">
-              <div class="recipe-icon-preview recipe-icon">${CLOCHE_ICON}</div>
+              <div class="recipe-icon-preview recipe-icon new-recipe-icon-placeholder">${CLOCHE_ICON}</div>
               ${recipeIconUploadHtml()}
             </div>
             <h1 class="new-recipe-name" contenteditable="true" spellcheck="false" data-singleline="true" data-placeholder="Nome da receita"></h1>
