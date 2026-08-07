@@ -19,11 +19,10 @@ function escapeHtml(str) {
 const PLATE_ICON = `<svg width="34" height="34" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="24" cy="24" r="19"/><circle cx="24" cy="24" r="11"/></svg>`;
 const CAMERA_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>`;
 
-function recipeIconUploadHtml(catSlug, recipeSlug) {
-  const idAttrs = catSlug && recipeSlug ? `data-cat="${catSlug}" data-recipe="${recipeSlug}"` : "";
+function recipeIconUploadHtml() {
   return `
-    <label class="recipe-icon-upload" title="Alterar ícone" aria-label="Alterar ícone">
-      <input type="file" accept="image/*" class="recipe-icon-input" ${idAttrs} hidden />
+    <label class="recipe-icon-upload" title="Adicionar ícone" aria-label="Adicionar ícone">
+      <input type="file" accept="image/*" class="recipe-icon-input" hidden />
       ${CAMERA_ICON}
     </label>
   `;
@@ -368,14 +367,11 @@ function renderRecipe(catSlug, recipeSlug) {
 
         <div class="recipe-page">
           <div class="recipe-head">
-            <div class="recipe-icon-wrap">
-              ${recipe.iconData
-                ? `<img class="recipe-icon-preview recipe-dish-icon" src="${recipe.iconData}" alt="" />`
-                : recipe.icon
-                  ? `<img class="recipe-icon-preview recipe-dish-icon" src="assets/img/icons/recipes/${recipe.icon}.svg" alt="" />`
-                  : `<div class="recipe-icon-preview recipe-icon">${PLATE_ICON}</div>`}
-              ${recipeIconUploadHtml(cat.slug, recipe.slug)}
-            </div>
+            ${recipe.iconData
+              ? `<img class="recipe-dish-icon" src="${recipe.iconData}" alt="" />`
+              : recipe.icon
+                ? `<img class="recipe-dish-icon" src="assets/img/icons/recipes/${recipe.icon}.svg" alt="" />`
+                : `<div class="recipe-icon">${PLATE_ICON}</div>`}
             <h1 contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="name">${escapeHtml(recipe.name)}</h1>
           </div>
 
@@ -656,9 +652,8 @@ document.addEventListener("change", (e) => {
   }
 });
 
-// Delegated listener: uploaded recipe icons — resize/compress, then either save
-// straight to the recipe (existing recipe pages) or stash on the wrapper for the
-// "new recipe" Save button to pick up (recipe doesn't exist yet).
+// Delegated listener: uploaded icon on the new-recipe editor — resize/compress
+// and stash it on the wrapper for the Save button to pick up.
 document.addEventListener("change", (e) => {
   const input = e.target;
   if (!input.matches || !input.matches(".recipe-icon-input")) return;
@@ -673,8 +668,6 @@ document.addEventListener("change", (e) => {
         const preview = wrap.querySelector(".recipe-icon-preview");
         if (preview) preview.outerHTML = `<img class="recipe-icon-preview recipe-dish-icon" src="${dataUrl}" alt="" />`;
       }
-      const { cat, recipe } = input.dataset;
-      if (cat && recipe) saveRecipeEdit(cat, recipe, "iconData", dataUrl);
     })
     .catch((err) => {
       console.error("Failed to process uploaded icon:", err);
