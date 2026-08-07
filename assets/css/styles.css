@@ -294,8 +294,9 @@ body.cat-planner  { --accent: #F5A572; --accent-dark: #F59E72; --light: #FFF1E8;
   border-radius: 50%;
   background: var(--light);
   color: var(--accent-dark);
+  font-family: var(--font-body);
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 400;
   text-decoration: none;
   line-height: 1;
   flex-shrink: 0;
@@ -423,6 +424,26 @@ body.cat-planner  { --accent: #F5A572; --accent-dark: #F59E72; --light: #FFF1E8;
   margin: 0 auto 10px;
   object-fit: contain;
 }
+.recipe-icon-wrap { position: relative; display: inline-block; margin-bottom: 14px; }
+.recipe-icon-wrap .recipe-icon-preview.recipe-icon,
+.recipe-icon-wrap .recipe-icon-preview.recipe-dish-icon { margin: 0; }
+.recipe-icon-upload {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--accent-dark);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 2px solid var(--paper);
+}
+.recipe-icon-upload:hover { opacity: 0.9; }
+.recipe-icon-upload svg { width: 15px; height: 15px; }
 .recipe-head h1 {
   font-family: var(--font-title);
   text-transform: uppercase;

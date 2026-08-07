@@ -17,6 +17,43 @@ function escapeHtml(str) {
 }
 
 const PLATE_ICON = `<svg width="34" height="34" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="24" cy="24" r="19"/><circle cx="24" cy="24" r="11"/></svg>`;
+const CAMERA_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>`;
+
+function recipeIconUploadHtml(catSlug, recipeSlug) {
+  const idAttrs = catSlug && recipeSlug ? `data-cat="${catSlug}" data-recipe="${recipeSlug}"` : "";
+  return `
+    <label class="recipe-icon-upload" title="Alterar ícone" aria-label="Alterar ícone">
+      <input type="file" accept="image/*" class="recipe-icon-input" ${idAttrs} hidden />
+      ${CAMERA_ICON}
+    </label>
+  `;
+}
+
+/* Reads an image file, center-crops it to a square, and downsizes it to a
+   compact JPEG data URL so it fits comfortably in a Firestore document. */
+function resizeImageToDataUrl(file, size) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const cropSize = Math.min(img.width, img.height);
+        const sx = (img.width - cropSize) / 2;
+        const sy = (img.height - cropSize) / 2;
+        const canvas = document.createElement("canvas");
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, sx, sy, cropSize, cropSize, 0, 0, size, size);
+        resolve(canvas.toDataURL("image/jpeg", 0.85));
+      };
+      img.onerror = reject;
+      img.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 function tabbarHtml(activeSlug) {
   const plannerActive = activeSlug === "planner" ? "is-active" : "";
@@ -67,6 +104,7 @@ function listHeaderHtml(label, addHref) {
 }
 
 function recipeRowIconHtml(recipe) {
+  if (recipe.iconData) return `<img class="recipe-row-icon" src="${recipe.iconData}" alt="" />`;
   return recipe.icon
     ? `<img class="recipe-row-icon" src="assets/img/icons/recipes/${recipe.icon}.svg" alt="" />`
     : `<span class="recipe-row-icon recipe-row-icon-placeholder">${PLATE_ICON}</span>`;
@@ -330,9 +368,14 @@ function renderRecipe(catSlug, recipeSlug) {
 
         <div class="recipe-page">
           <div class="recipe-head">
-            ${recipe.icon
-              ? `<img class="recipe-dish-icon" src="assets/img/icons/recipes/${recipe.icon}.svg" alt="" />`
-              : `<div class="recipe-icon">${PLATE_ICON}</div>`}
+            <div class="recipe-icon-wrap">
+              ${recipe.iconData
+                ? `<img class="recipe-icon-preview recipe-dish-icon" src="${recipe.iconData}" alt="" />`
+                : recipe.icon
+                  ? `<img class="recipe-icon-preview recipe-dish-icon" src="assets/img/icons/recipes/${recipe.icon}.svg" alt="" />`
+                  : `<div class="recipe-icon-preview recipe-icon">${PLATE_ICON}</div>`}
+              ${recipeIconUploadHtml(cat.slug, recipe.slug)}
+            </div>
             <h1 contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="name">${escapeHtml(recipe.name)}</h1>
           </div>
 
@@ -399,7 +442,10 @@ function renderNewRecipe(catSlug) {
           </div>
 
           <div class="recipe-head">
-            <div class="recipe-icon">${PLATE_ICON}</div>
+            <div class="recipe-icon-wrap">
+              <div class="recipe-icon-preview recipe-icon">${PLATE_ICON}</div>
+              ${recipeIconUploadHtml()}
+            </div>
             <h1 class="new-recipe-name" contenteditable="true" spellcheck="false" data-singleline="true" data-placeholder="Nome da receita"></h1>
           </div>
 
@@ -533,6 +579,8 @@ function bindNewRecipeEvents(catSlug) {
 
       const slug = uniqueRecipeSlug(catSlug, slugifyRecipeName(name));
       const recipe = { slug, name, doses, tempo, ingredients, preparacao };
+      const iconWrap = root.querySelector(".recipe-icon-wrap");
+      if (iconWrap && iconWrap.dataset.iconData) recipe.iconData = iconWrap.dataset.iconData;
       if (window.saveNewRecipeRemote) window.saveNewRecipeRemote(catSlug, recipe);
       location.hash = `#/cat/${catSlug}/${slug}`;
     });
@@ -606,6 +654,32 @@ document.addEventListener("change", (e) => {
     if (input.checked) localStorage.setItem(key, "1");
     else localStorage.removeItem(key);
   }
+});
+
+// Delegated listener: uploaded recipe icons — resize/compress, then either save
+// straight to the recipe (existing recipe pages) or stash on the wrapper for the
+// "new recipe" Save button to pick up (recipe doesn't exist yet).
+document.addEventListener("change", (e) => {
+  const input = e.target;
+  if (!input.matches || !input.matches(".recipe-icon-input")) return;
+  const file = input.files && input.files[0];
+  if (!file) return;
+
+  resizeImageToDataUrl(file, 240)
+    .then((dataUrl) => {
+      const wrap = input.closest(".recipe-icon-wrap");
+      if (wrap) {
+        wrap.dataset.iconData = dataUrl;
+        const preview = wrap.querySelector(".recipe-icon-preview");
+        if (preview) preview.outerHTML = `<img class="recipe-icon-preview recipe-dish-icon" src="${dataUrl}" alt="" />`;
+      }
+      const { cat, recipe } = input.dataset;
+      if (cat && recipe) saveRecipeEdit(cat, recipe, "iconData", dataUrl);
+    })
+    .catch((err) => {
+      console.error("Failed to process uploaded icon:", err);
+      alert("Não foi possível processar essa imagem. Tenta outra.");
+    });
 });
 
 // Delegated listeners: persist edits made directly on recipe text (name, doses,

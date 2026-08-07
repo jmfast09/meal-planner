@@ -124,6 +124,7 @@ function getEffectiveRecipe(catSlug, recipe) {
   if (recipe.notas !== undefined) {
     eff.notas = getRecipeEdit(catSlug, slug, "notas", recipe.notas);
   }
+  eff.iconData = getRecipeEdit(catSlug, slug, "iconData", recipe.iconData);
   return eff;
 }
 
