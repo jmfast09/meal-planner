@@ -31,6 +31,17 @@ function recipeIconUploadHtml() {
 /* Reads an image file, center-crops it to a square, and downsizes it to a
    compact JPEG data URL so it fits comfortably in a Firestore document. */
 function resizeImageToDataUrl(file, size) {
+  // SVGs are vector — store them as-is so they stay perfectly crisp at any
+  // display size, instead of rasterizing (and possibly blurring) them.
+  if (file.type === "image/svg+xml" || /\.svg$/i.test(file.name || "")) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -39,12 +50,17 @@ function resizeImageToDataUrl(file, size) {
         const cropSize = Math.min(img.width, img.height);
         const sx = (img.width - cropSize) / 2;
         const sy = (img.height - cropSize) / 2;
+        // Never upscale past the source's own resolution — that just blurs it further.
+        const outSize = Math.min(size, cropSize);
         const canvas = document.createElement("canvas");
-        canvas.width = size;
-        canvas.height = size;
+        canvas.width = outSize;
+        canvas.height = outSize;
         const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, sx, sy, cropSize, cropSize, 0, 0, size, size);
-        resolve(canvas.toDataURL("image/jpeg", 0.85));
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(img, sx, sy, cropSize, cropSize, 0, 0, outSize, outSize);
+        // PNG (lossless) instead of JPEG — avoids compression blockiness and keeps transparency.
+        resolve(canvas.toDataURL("image/png"));
       };
       img.onerror = reject;
       img.src = reader.result;
@@ -660,7 +676,7 @@ document.addEventListener("change", (e) => {
   const file = input.files && input.files[0];
   if (!file) return;
 
-  resizeImageToDataUrl(file, 240)
+  resizeImageToDataUrl(file, 480)
     .then((dataUrl) => {
       const wrap = input.closest(".recipe-icon-wrap");
       if (wrap) {
