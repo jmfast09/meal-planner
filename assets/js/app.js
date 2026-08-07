@@ -5,7 +5,7 @@ function findCategory(slug) {
 }
 
 function findRecipe(catSlug, recipeSlug) {
-  const list = RECIPES[catSlug] || [];
+  const list = getAllRecipes(catSlug);
   return list.find((r) => r.slug === recipeSlug);
 }
 
@@ -56,10 +56,11 @@ function renderHome() {
   `;
 }
 
-function listHeaderHtml(label) {
+function listHeaderHtml(label, addHref) {
   return `
     <div class="list-header">
       <span class="list-pill">${escapeHtml(label)}</span>
+      ${addHref ? `<a class="list-add-btn" href="${addHref}" aria-label="Criar nova receita" title="Criar nova receita">+</a>` : ""}
       <input type="text" class="category-search" placeholder="Procurar..." autocomplete="off" />
     </div>
   `;
@@ -72,7 +73,7 @@ function recipeRowIconHtml(recipe) {
 }
 
 function renderCategoryList(cat) {
-  const items = (RECIPES[cat.slug] || [])
+  const items = getAllRecipes(cat.slug)
     .map((r) => getEffectiveRecipe(cat.slug, r))
     .sort((a, b) => a.name.localeCompare(b.name, "pt"));
   let bodyHtml;
@@ -110,7 +111,7 @@ function renderCategoryList(cat) {
     <div class="wavy-wrap">
       <div class="wavy-frame">
         <div class="wavy-inner">
-          ${listHeaderHtml("Lista de Receitas")}
+          ${listHeaderHtml("Lista de Receitas", `#/cat/${cat.slug}/new`)}
           ${bodyHtml}
         </div>
       </div>
@@ -366,6 +367,186 @@ function renderRecipe(catSlug, recipeSlug) {
   `;
 }
 
+function renderNewRecipe(catSlug) {
+  const cat = findCategory(catSlug);
+  if (!cat || cat.type !== "recipes") return renderNotFound();
+  document.body.className = "cat-" + cat.slug;
+
+  return `
+    <div class="app-shell">
+      <main class="main">
+        <div class="banner">
+          <div class="banner-left">
+            <a class="back-link" href="#/cat/${cat.slug}">← ${escapeHtml(cat.short)}</a>
+            <h1>${escapeHtml(cat.title)}</h1>
+          </div>
+        </div>
+
+        ${tabbarHtml(cat.slug)}
+
+        <div class="crumbs"><a href="#/">Categorias</a> / <a href="#/cat/${cat.slug}">${escapeHtml(cat.short)}</a> / Nova receita</div>
+
+        <div class="recipe-page recipe-page-new">
+          <div class="recipe-new-actions">
+            <button type="button" class="planner-btn planner-btn-ghost new-recipe-clear-btn">Limpar</button>
+            <button type="button" class="planner-btn planner-btn-icon new-recipe-save-btn" title="Guardar receita" aria-label="Guardar receita">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/>
+                <path d="M17 21v-8H7v8"/>
+                <path d="M7 3v5h8"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="recipe-head">
+            <div class="recipe-icon">${PLATE_ICON}</div>
+            <h1 class="new-recipe-name" contenteditable="true" spellcheck="false" data-singleline="true" data-placeholder="Nome da receita"></h1>
+          </div>
+
+          <div class="recipe-meta">
+            <span>DOSES: <span class="new-recipe-doses" contenteditable="true" spellcheck="false" data-singleline="true" data-placeholder="ex: 4"></span></span>
+            <span>TEMPO DE PREP: <span class="new-recipe-tempo" contenteditable="true" spellcheck="false" data-singleline="true" data-placeholder="ex: 30 min"></span></span>
+          </div>
+
+          <div class="recipe-grid">
+            <div class="box">
+              <div class="box-header">Ingredientes</div>
+              <div class="box-body">
+                <ul class="ingredient-list new-recipe-list" data-new-list="ingredients">
+                  <li contenteditable="true" spellcheck="false" data-placeholder="Escreve ou cola os ingredientes"></li>
+                </ul>
+              </div>
+            </div>
+            <div class="box">
+              <div class="box-header">Preparação</div>
+              <div class="box-body">
+                <ul class="prep-list new-recipe-list" data-new-list="preparacao">
+                  <li>
+                    <div class="prep-step">
+                      <span class="prep-step-num">1.</span>
+                      <span class="prep-step-text" contenteditable="true" spellcheck="false" data-placeholder="Escreve ou cola os passos"></span>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  `;
+}
+
+function placeCursorAtEnd(el) {
+  el.focus();
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  range.collapse(false);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+function bindNewRecipeList(ul) {
+  const isPrep = ul.dataset.newList === "preparacao";
+
+  function renumber() {
+    if (!isPrep) return;
+    ul.querySelectorAll(".prep-step-num").forEach((el, i) => { el.textContent = `${i + 1}.`; });
+  }
+
+  function editableOf(li) {
+    return isPrep ? li.querySelector(".prep-step-text") : li;
+  }
+
+  function insertItemAfter(li, text) {
+    const html = isPrep
+      ? `<li><div class="prep-step"><span class="prep-step-num"></span><span class="prep-step-text" contenteditable="true" spellcheck="false" data-placeholder="Escreve ou cola os passos">${escapeHtml(text)}</span></div></li>`
+      : `<li contenteditable="true" spellcheck="false" data-placeholder="Escreve ou cola os ingredientes">${escapeHtml(text)}</li>`;
+    li.insertAdjacentHTML("afterend", html);
+    return li.nextElementSibling;
+  }
+
+  ul.addEventListener("keydown", (e) => {
+    const editable = e.target.closest(isPrep ? ".prep-step-text" : "li");
+    if (!editable || !ul.contains(editable)) return;
+    const li = isPrep ? editable.closest("li") : editable;
+
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const newLi = insertItemAfter(li, "");
+      renumber();
+      placeCursorAtEnd(editableOf(newLi));
+      return;
+    }
+
+    if (e.key === "Backspace" && editable.textContent.trim() === "" && ul.children.length > 1) {
+      const prevLi = li.previousElementSibling;
+      if (!prevLi) return;
+      e.preventDefault();
+      li.remove();
+      renumber();
+      placeCursorAtEnd(editableOf(prevLi));
+    }
+  });
+
+  ul.addEventListener("paste", (e) => {
+    const editable = e.target.closest(isPrep ? ".prep-step-text" : "li");
+    if (!editable || !ul.contains(editable)) return;
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData("text/plain");
+    const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    if (lines.length === 0) return;
+
+    editable.textContent = lines[0];
+    let li = isPrep ? editable.closest("li") : editable;
+    for (let i = 1; i < lines.length; i++) {
+      li = insertItemAfter(li, lines[i]);
+    }
+    renumber();
+    placeCursorAtEnd(editableOf(li));
+  });
+}
+
+function bindNewRecipeEvents(catSlug) {
+  const root = document.querySelector(".recipe-page-new");
+  if (!root) return;
+
+  root.querySelectorAll(".new-recipe-list").forEach((ul) => bindNewRecipeList(ul));
+
+  const saveBtn = root.querySelector(".new-recipe-save-btn");
+  if (saveBtn) {
+    saveBtn.addEventListener("click", () => {
+      const name = root.querySelector(".new-recipe-name").textContent.trim();
+      if (!name) {
+        alert("Escreve pelo menos o nome da receita.");
+        return;
+      }
+      const doses = root.querySelector(".new-recipe-doses").textContent.trim();
+      const tempo = root.querySelector(".new-recipe-tempo").textContent.trim();
+      const ingredients = Array.from(root.querySelectorAll('[data-new-list="ingredients"] > li'))
+        .map((li) => li.textContent.trim())
+        .filter(Boolean);
+      const preparacao = Array.from(root.querySelectorAll('[data-new-list="preparacao"] .prep-step-text'))
+        .map((el) => el.textContent.trim())
+        .filter(Boolean);
+
+      const slug = uniqueRecipeSlug(catSlug, slugifyRecipeName(name));
+      const recipe = { slug, name, doses, tempo, ingredients, preparacao };
+      if (window.saveNewRecipeRemote) window.saveNewRecipeRemote(catSlug, recipe);
+      location.hash = `#/cat/${catSlug}/${slug}`;
+    });
+  }
+
+  const clearBtn = root.querySelector(".new-recipe-clear-btn");
+  if (clearBtn) {
+    clearBtn.addEventListener("click", () => {
+      if (!confirm("Isto limpa tudo o que escreveste nesta página. Continuar?")) return;
+      router();
+    });
+  }
+}
+
 function renderNotFound() {
   document.body.className = "";
   return `
@@ -395,6 +576,8 @@ function router() {
     html = renderPlanner();
   } else if (parts[0] === "cat" && parts[1] && !parts[2]) {
     html = renderCategory(parts[1]);
+  } else if (parts[0] === "cat" && parts[1] && parts[2] === "new") {
+    html = renderNewRecipe(parts[1]);
   } else if (parts[0] === "cat" && parts[1] && parts[2]) {
     html = renderRecipe(parts[1], parts[2]);
   } else {
@@ -408,6 +591,7 @@ function router() {
 
   if (parts[0] === "planner") bindPlannerEvents();
   else if (parts[0] === "cat" && parts[1] && !parts[2]) bindCategorySearch();
+  else if (parts[0] === "cat" && parts[1] && parts[2] === "new") bindNewRecipeEvents(parts[1]);
   else if (parts[0] === "cat" && parts[1] && parts[2]) {
     const recipe = findRecipe(parts[1], parts[2]);
     if (recipe) bindRecipeHistory(getEffectiveRecipe(parts[1], recipe));
@@ -441,7 +625,7 @@ document.addEventListener("focusout", (e) => {
 });
 
 document.addEventListener("keydown", (e) => {
-  const el = e.target.closest("[data-field][data-singleline]");
+  const el = e.target.closest("[data-singleline]");
   if (!el) return;
   if (e.key === "Enter") {
     e.preventDefault();

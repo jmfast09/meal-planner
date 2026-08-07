@@ -285,6 +285,24 @@ body.cat-planner  { --accent: #F5A572; --accent-dark: #F59E72; --light: #FFF1E8;
   flex-wrap: wrap;
 }
 
+.list-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--light);
+  color: var(--accent-dark);
+  font-size: 20px;
+  font-weight: 800;
+  text-decoration: none;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-right: auto;
+}
+.list-add-btn:hover { opacity: 0.85; }
+
 .category-search {
   flex: 1;
   min-width: 140px;
@@ -555,6 +573,14 @@ body.cat-planner  { --accent: #F5A572; --accent-dark: #F59E72; --light: #FFF1E8;
   line-height: 1.5;
   color: var(--accent-dark);
   white-space: pre-line;
+}
+
+.recipe-new-actions { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 16px; }
+
+[contenteditable][data-placeholder]:empty:before {
+  content: attr(data-placeholder);
+  color: var(--ink-soft);
+  pointer-events: none;
 }
 
 .history-box { margin-top: 22px; }

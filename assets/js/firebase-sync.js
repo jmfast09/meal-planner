@@ -108,3 +108,34 @@ window.savePlannerArchiveRemote = function (list) {
     alert("Não foi possível guardar o arquivo (sem ligação?). Tenta novamente.");
   });
 };
+
+// ---------- Recipes created in-app via the "+" button (shared) ----------
+const newRecipesRef = doc(db, "mealPlanner", "newRecipes");
+window.__newRecipesCache = {};
+
+onSnapshot(
+  newRecipesRef,
+  (snap) => {
+    window.__newRecipesCache = snap.exists() ? snap.data() : {};
+    if (typeof router === "function") router();
+  },
+  (err) => {
+    console.error("Firestore new-recipes sync error:", err);
+  }
+);
+
+window.saveNewRecipeRemote = function (catSlug, recipe) {
+  // Optimistic local update so the UI reflects the new recipe immediately.
+  const cache = window.__newRecipesCache;
+  cache[catSlug] = cache[catSlug] || {};
+  cache[catSlug][recipe.slug] = recipe;
+
+  setDoc(
+    newRecipesRef,
+    { [catSlug]: { [recipe.slug]: recipe } },
+    { merge: true }
+  ).catch((err) => {
+    console.error("Failed to save new recipe:", err);
+    alert("Não foi possível guardar a receita (sem ligação?). Tenta novamente.");
+  });
+};

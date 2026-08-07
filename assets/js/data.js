@@ -127,6 +127,37 @@ function getEffectiveRecipe(catSlug, recipe) {
   return eff;
 }
 
+/* Recipes created in-app (via the "+" button), shared across devices through
+   Firestore — see firebase-sync.js, which maintains window.__newRecipesCache
+   and exposes window.saveNewRecipeRemote(). Layered on top of the built-in
+   RECIPES so newly created recipes show up in lists, search, and the
+   Planner's Menu da semana just like the shipped ones. */
+function getAllRecipes(catSlug) {
+  const base = RECIPES[catSlug] || [];
+  const cache = window.__newRecipesCache;
+  const extra = cache && cache[catSlug]
+    ? Object.keys(cache[catSlug]).map((slug) => ({ slug, ...cache[catSlug][slug] }))
+    : [];
+  return [...base, ...extra];
+}
+
+function slugifyRecipeName(name) {
+  const slug = name
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return slug || "receita";
+}
+
+function uniqueRecipeSlug(catSlug, baseSlug) {
+  const existing = new Set(getAllRecipes(catSlug).map((r) => r.slug));
+  if (!existing.has(baseSlug)) return baseSlug;
+  let i = 2;
+  while (existing.has(`${baseSlug}-${i}`)) i++;
+  return `${baseSlug}-${i}`;
+}
+
 /* Weekly meal planner — first tab, kept separate from CATEGORIES since it
    isn't a recipe category (no cover card, no recipe list). */
 const PLANNER_TAB = {
