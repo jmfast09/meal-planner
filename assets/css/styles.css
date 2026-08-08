@@ -66,7 +66,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 
 /* ---------- Category color themes ---------- */
 body.cat-bake     { --accent: #F2776B; --accent-dark: #FF8181; --light: #FCEEEA; --pastel: #FAD2CE; }
-body.cat-pasta    { --accent: #D9A928; --accent-dark: #EFCD60; --light: #FDF6DF; --pastel: #FFECB1; }
+body.cat-pasta    { --accent: #FFCB28; --accent-dark: #FFCB28; --light: #FFEFBC; --pastel: #FFEFBC; }
 body.cat-classics { --accent: #4FA3C2; --accent-dark: #4696A6; --light: #EAF6FB; --pastel: #9EE2F1; }
 body.cat-world    { --accent: #34A897; --accent-dark: #57A292; --light: #E8FAF6; --pastel: #93E9D7; }
 body.cat-healthy  { --accent: #6FA83C; --accent-dark: #67BFAD; --light: #F1FAE6; --pastel: #DCF9B6; }
@@ -342,6 +342,21 @@ body.cat-sides {
   border-bottom: 2px solid var(--light);
 }
 .recipe-table thead th:last-child { text-align: right; }
+
+.list-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 0;
+  margin-left: 4px;
+  color: var(--accent-dark);
+  vertical-align: middle;
+  cursor: pointer;
+}
+.list-filter-btn svg { width: 12px; height: 12px; }
+.list-filter-btn:hover { opacity: 0.7; }
 
 .recipe-table tbody td {
   padding: 13px 0;

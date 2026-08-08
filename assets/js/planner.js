@@ -13,6 +13,7 @@ let plannerArchiveOpenId = null; // id of an archived week currently expanded
 function plannerEmptyDraft() {
   const menu = {};
   PLANNER_MENU_CATEGORIES.forEach((slug) => { menu[slug] = { dish: "", doses: "" }; });
+  menu.extra = { dish: "", doses: "" };
 
   const grid = {};
   PLANNER_DAYS.forEach((d) => {
@@ -90,7 +91,8 @@ function plannerDishOptions(categorySlug) {
 }
 
 function plannerTotalDoses(draft) {
-  return PLANNER_MENU_CATEGORIES.reduce((sum, slug) => {
+  const slugs = [...PLANNER_MENU_CATEGORIES, "extra"];
+  return slugs.reduce((sum, slug) => {
     const n = parseInt((draft.menu[slug] && draft.menu[slug].doses) || "", 10);
     return sum + (Number.isNaN(n) ? 0 : n);
   }, 0);
@@ -216,6 +218,19 @@ function plannerMenuRowHtml(slug, draft, readOnly) {
   `;
 }
 
+function plannerExtraRowHtml(draft, readOnly) {
+  const row = draft.menu.extra || { dish: "", doses: "" };
+  return `
+    <div class="menu-row" style="--row-bg:#FFCFE0;--row-text:#F884AF">
+      <span class="menu-row-label" draggable="${readOnly ? "false" : "true"}" data-category="extra">EXTRA</span>
+      <div class="menu-row-field">
+        <input type="text" class="menu-dish-input" data-category="extra" value="${escapeHtml(row.dish)}" ${readOnly ? "readonly" : ""} autocomplete="off" />
+      </div>
+      <input type="text" class="menu-doses-input" data-category="extra" value="${escapeHtml(row.doses)}" ${readOnly ? "readonly" : ""} />
+    </div>
+  `;
+}
+
 function plannerTotalRowHtml(draft) {
   return `
     <div class="menu-row menu-row-total">
@@ -227,7 +242,9 @@ function plannerTotalRowHtml(draft) {
 }
 
 function plannerFormHtml(draft, readOnly) {
-  const menuRows = PLANNER_MENU_CATEGORIES.map((slug) => plannerMenuRowHtml(slug, draft, readOnly)).join("") + plannerTotalRowHtml(draft);
+  const menuRows = PLANNER_MENU_CATEGORIES.map((slug) => plannerMenuRowHtml(slug, draft, readOnly)).join("")
+    + plannerExtraRowHtml(draft, readOnly)
+    + plannerTotalRowHtml(draft);
 
   const weeklyRows = PLANNER_DAYS.map((day) => `
     <div class="weekly-row">
@@ -281,7 +298,7 @@ let plannerArchiveSearchQuery = "";
 let plannerArchiveSearchWasFocused = false;
 
 function plannerArchiveEntryText(entry) {
-  const dishNames = PLANNER_MENU_CATEGORIES.map((slug) => (entry.menu && entry.menu[slug] && entry.menu[slug].dish) || "").join(" ");
+  const dishNames = [...PLANNER_MENU_CATEGORIES, "extra"].map((slug) => (entry.menu && entry.menu[slug] && entry.menu[slug].dish) || "").join(" ");
   return `${dishNames} ${entry.notes || ""} ${entry.portions || ""}`.toLowerCase();
 }
 
