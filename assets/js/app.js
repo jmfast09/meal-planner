@@ -66,8 +66,16 @@ function resizeImageToDataUrl(file, size) {
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = "high";
         ctx.drawImage(img, sx, sy, cropSize, cropSize, 0, 0, outSize, outSize);
-        // PNG (lossless) instead of JPEG — avoids compression blockiness and keeps transparency.
-        resolve(canvas.toDataURL("image/png"));
+        // JPEG, not PNG: photos are stored inline in a shared Firestore document
+        // (1 MiB hard limit across every recipe in the category), and PNG can run
+        // 5-20x larger than JPEG for photographic content. At this icon's display
+        // size (110px, ~330px at 3x DPR) quality 0.85 shows no visible artifacting,
+        // so this trades invisible fidelity for staying well under that limit.
+        // Steps down further only if a single upload is still unusually large.
+        let dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        if (dataUrl.length > 400000) dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+        if (dataUrl.length > 400000) dataUrl = canvas.toDataURL("image/jpeg", 0.55);
+        resolve(dataUrl);
       };
       img.onerror = reject;
       img.src = reader.result;
