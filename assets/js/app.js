@@ -491,12 +491,18 @@ function renderNewRecipe(catSlug) {
           </div>
 
           <div class="recipe-grid">
-            <div class="box">
-              <div class="box-header">Ingredientes</div>
-              <div class="box-body">
-                <ul class="ingredient-list new-recipe-list" data-new-list="ingredients">
-                  <li contenteditable="true" spellcheck="false" data-placeholder="Escreve ou cola os ingredientes"></li>
-                </ul>
+            <div>
+              <div class="box">
+                <div class="box-header">Ingredientes</div>
+                <div class="box-body">
+                  <ul class="ingredient-list new-recipe-list" data-new-list="ingredients">
+                    <li contenteditable="true" spellcheck="false" data-placeholder="Escreve ou cola os ingredientes"></li>
+                  </ul>
+                </div>
+              </div>
+              <div class="box notas-box">
+                <div class="box-header">Notas</div>
+                <div class="box-body new-recipe-notas" contenteditable="true" spellcheck="false" data-placeholder="Notas (opcional)"></div>
               </div>
             </div>
             <div class="box">
@@ -612,9 +618,11 @@ function bindNewRecipeEvents(catSlug) {
       const preparacao = Array.from(root.querySelectorAll('[data-new-list="preparacao"] .prep-step-text'))
         .map((el) => el.textContent.trim())
         .filter(Boolean);
+      const notas = root.querySelector(".new-recipe-notas").innerText.trim();
 
       const slug = uniqueRecipeSlug(catSlug, slugifyRecipeName(name));
       const recipe = { slug, name, doses, tempo, ingredients, preparacao };
+      if (notas) recipe.notas = notas;
       const iconWrap = root.querySelector(".recipe-icon-wrap");
       if (iconWrap && iconWrap.dataset.iconData) recipe.iconData = iconWrap.dataset.iconData;
       if (window.saveNewRecipeRemote) window.saveNewRecipeRemote(catSlug, recipe);
