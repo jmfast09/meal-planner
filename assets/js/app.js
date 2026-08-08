@@ -638,6 +638,11 @@ function bindNewRecipeEvents(catSlug) {
       if (notas) recipe.notas = notas;
       const iconWrap = root.querySelector(".recipe-icon-wrap");
       if (iconWrap && iconWrap.dataset.iconData) recipe.iconData = iconWrap.dataset.iconData;
+      // uniqueRecipeSlug ignores hidden (deleted) recipes when checking for
+      // collisions, so recreating one reuses its old slug — clear any stale
+      // "hidden" flag left over from that deletion, or the new recipe would
+      // be filtered out by getAllRecipes and immediately 404.
+      saveRecipeEdit(catSlug, slug, "hidden", "");
       window.saveNewRecipeRemote(catSlug, recipe);
       location.hash = `#/cat/${catSlug}/${slug}`;
     });
