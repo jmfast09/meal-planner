@@ -628,12 +628,17 @@ function bindNewRecipeEvents(catSlug) {
         .filter(Boolean);
       const notas = root.querySelector(".new-recipe-notas").innerText.trim();
 
+      if (!window.saveNewRecipeRemote) {
+        alert("A app ainda está a ligar-se à base de dados. Espera um instante e tenta guardar de novo.");
+        return;
+      }
+
       const slug = uniqueRecipeSlug(catSlug, slugifyRecipeName(name));
       const recipe = { slug, name, doses, tempo, ingredients, preparacao };
       if (notas) recipe.notas = notas;
       const iconWrap = root.querySelector(".recipe-icon-wrap");
       if (iconWrap && iconWrap.dataset.iconData) recipe.iconData = iconWrap.dataset.iconData;
-      if (window.saveNewRecipeRemote) window.saveNewRecipeRemote(catSlug, recipe);
+      window.saveNewRecipeRemote(catSlug, recipe);
       location.hash = `#/cat/${catSlug}/${slug}`;
     });
   }
