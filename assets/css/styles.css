@@ -353,10 +353,7 @@ body.cat-sides {
 .recipe-row-name {
   font-weight: 400;
   color: #2b2b2b;
-  cursor: text;
 }
-.recipe-row-icon-link { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.recipe-row-icon-link:hover { opacity: 0.8; }
 .recipe-row-doses { cursor: text; }
 
 .recipe-row-link { display: flex; align-items: center; gap: 10px; }

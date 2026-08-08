@@ -144,12 +144,10 @@ function renderCategoryList(cat) {
     const rows = items.map((r) => `
       <tr class="is-link" data-search-name="${escapeHtml(r.name)}">
         <td>
-          <div class="recipe-row-link">
-            <a class="recipe-row-icon-link" href="#/cat/${cat.slug}/${r.slug}" aria-label="Ver receita">
-              ${recipeRowIconHtml(r)}
-            </a>
-            <span class="recipe-row-name" contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${r.slug}" data-field="name">${escapeHtml(r.name)}</span>
-          </div>
+          <a class="recipe-row-link" href="#/cat/${cat.slug}/${r.slug}">
+            ${recipeRowIconHtml(r)}
+            <span class="recipe-row-name">${escapeHtml(r.name)}</span>
+          </a>
         </td>
         <td class="recipe-row-doses" contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${r.slug}" data-field="doses">${escapeHtml(String(r.doses))}</td>
       </tr>
