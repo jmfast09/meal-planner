@@ -139,7 +139,11 @@ function getAllRecipes(catSlug) {
   const extra = cache && cache[catSlug]
     ? Object.keys(cache[catSlug]).map((slug) => ({ slug, ...cache[catSlug][slug] }))
     : [];
-  return [...base, ...extra].filter((r) => !getRecipeEdit(catSlug, r.slug, "hidden", false));
+  // If a recreated recipe reuses the slug of a deleted built-in one, let the
+  // recreated (newer) version win instead of showing both under one slug.
+  const extraSlugs = new Set(extra.map((r) => r.slug));
+  const merged = [...base.filter((r) => !extraSlugs.has(r.slug)), ...extra];
+  return merged.filter((r) => !getRecipeEdit(catSlug, r.slug, "hidden", false));
 }
 
 function slugifyRecipeName(name) {
