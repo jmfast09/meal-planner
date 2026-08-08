@@ -609,7 +609,9 @@ body.cat-sides {
   white-space: pre-line;
 }
 
-.recipe-new-actions { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 16px; }
+.recipe-new-actions,
+.recipe-actions { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 16px; }
+.recipe-delete-btn { background: none; border: 1.5px solid var(--accent-dark); color: var(--accent-dark); }
 
 [contenteditable][data-placeholder]:empty:before {
   content: attr(data-placeholder);

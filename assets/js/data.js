@@ -139,7 +139,7 @@ function getAllRecipes(catSlug) {
   const extra = cache && cache[catSlug]
     ? Object.keys(cache[catSlug]).map((slug) => ({ slug, ...cache[catSlug][slug] }))
     : [];
-  return [...base, ...extra];
+  return [...base, ...extra].filter((r) => !getRecipeEdit(catSlug, r.slug, "hidden", false));
 }
 
 function slugifyRecipeName(name) {
