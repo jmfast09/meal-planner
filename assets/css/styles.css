@@ -83,6 +83,18 @@ body.cat-planner  { --accent: #F5A572; --accent-dark: #F59E72; --light: #FFF1E8;
   padding: 0 0 64px;
 }
 
+/* Recipe and list pages (categories with recipes/simple-list/grid-list content)
+   get a white page background below the colored banner, not the cream page tone. */
+body.cat-bake,
+body.cat-pasta,
+body.cat-classics,
+body.cat-world,
+body.cat-healthy,
+body.cat-easy,
+body.cat-sides {
+  background: #fff;
+}
+
 /* ---------- Tab bar (centered, horizontal, on every page) ---------- */
 .tabbar-wrap {
   display: flex;
@@ -314,7 +326,7 @@ body.cat-planner  { --accent: #F5A572; --accent-dark: #F59E72; --light: #FFF1E8;
   font-family: var(--font-body);
   font-size: 13px;
   color: var(--ink);
-  background: var(--paper);
+  background: #fff;
 }
 .category-search:focus { outline: none; border-color: var(--accent-dark); }
 
@@ -614,7 +626,7 @@ body.cat-planner  { --accent: #F5A572; --accent-dark: #F59E72; --light: #FFF1E8;
   font-family: var(--font-body);
   font-size: 12px;
   color: var(--ink);
-  background: var(--paper);
+  background: #fff;
 }
 .history-list li {
   padding: 8px 0;
