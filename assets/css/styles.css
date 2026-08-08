@@ -611,7 +611,6 @@ body.cat-sides {
 
 .recipe-new-actions,
 .recipe-actions { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 16px; }
-.recipe-delete-btn { background: none; border: 1.5px solid var(--accent-dark); color: var(--accent-dark); }
 
 [contenteditable][data-placeholder]:empty:before {
   content: attr(data-placeholder);
@@ -715,6 +714,9 @@ body.cat-sides {
   border-radius: 10px;
 }
 .planner-btn-icon svg { width: 18px; height: 18px; }
+
+.recipe-delete-btn { background: none; border: none; color: var(--accent-dark); }
+.recipe-delete-btn:hover { opacity: 0.7; }
 
 .planner-layout {
   display: grid;
