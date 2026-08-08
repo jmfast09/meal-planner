@@ -94,7 +94,10 @@ function tabbarHtml(activeSlug) {
     return `<a class="tabpill ${active}" style="--pill-bg:${c.pastel};--pill-text:${c.colorDark}" href="#/cat/${c.slug}">${c.short}</a>`;
   }).join("");
 
-  return `<div class="tabbar-wrap"><nav class="tabbar">${plannerPill}${pills}</nav></div>`;
+  const shoppingActive = activeSlug === "compras" ? "is-active" : "";
+  const shoppingPill = `<a class="tabpill tabpill-icon ${shoppingActive}" href="#/compras" aria-label="Lista de compras" title="Lista de compras"><img src="assets/img/icons/cart.svg" alt="" /></a>`;
+
+  return `<div class="tabbar-wrap"><nav class="tabbar">${plannerPill}${pills}${shoppingPill}</nav></div>`;
 }
 
 function renderHome() {
@@ -684,6 +687,8 @@ function router() {
     html = renderHome();
   } else if (parts[0] === "planner") {
     html = renderPlanner();
+  } else if (parts[0] === "compras") {
+    html = renderShoppingList();
   } else if (parts[0] === "cat" && parts[1] && !parts[2]) {
     html = renderCategory(parts[1]);
   } else if (parts[0] === "cat" && parts[1] && parts[2] === "new") {
@@ -700,6 +705,7 @@ function router() {
   lastRouterHash = hash;
 
   if (parts[0] === "planner") bindPlannerEvents();
+  else if (parts[0] === "compras") bindShoppingListEvents();
   else if (parts[0] === "cat" && parts[1] && !parts[2]) bindCategorySearch();
   else if (parts[0] === "cat" && parts[1] && parts[2] === "new") bindNewRecipeEvents(parts[1]);
   else if (parts[0] === "cat" && parts[1] && parts[2]) {

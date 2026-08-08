@@ -139,3 +139,31 @@ window.saveNewRecipeRemote = function (catSlug, recipe) {
     alert("Não foi possível guardar a receita (sem ligação?). Tenta novamente.");
   });
 };
+
+// ---------- Shopping list check-state (shared) ----------
+// Keyed by a short id derived from category+dish+ingredient (see
+// shoppingItemKey in planner.js) — value is "bought", "have", or absent.
+const shoppingListRef = doc(db, "mealPlanner", "shoppingList");
+window.__shoppingListCache = {};
+
+onSnapshot(
+  shoppingListRef,
+  (snap) => {
+    window.__shoppingListCache = snap.exists() ? snap.data() : {};
+    if (typeof router === "function") router();
+  },
+  (err) => {
+    console.error("Firestore shopping list sync error:", err);
+  }
+);
+
+window.saveShoppingListStateRemote = function (key, state) {
+  window.__shoppingListCache[key] = state; // optimistic
+  setDoc(
+    shoppingListRef,
+    { [key]: state },
+    { merge: true }
+  ).catch((err) => {
+    console.error("Failed to save shopping list state:", err);
+  });
+};

@@ -102,6 +102,69 @@ function plannerRecipeRefForDishAnyCategory(dishName) {
   return null;
 }
 
+/* Short stable id for a shopping-list item, safe as a Firestore field name
+   (raw ingredient text can contain dots, which Firestore reads as nested
+   field paths when used as an object key in setDoc). */
+function shoppingItemKey(parts) {
+  const raw = parts.join("::");
+  let hash = 0;
+  for (let i = 0; i < raw.length; i++) hash = (hash * 31 + raw.charCodeAt(i)) | 0;
+  return "i" + Math.abs(hash).toString(36);
+}
+
+// Pantry staples assumed always on hand — never added to the shopping list.
+const SHOPPING_LIST_EXCLUDED_WORDS = ["sal", "pimenta", "azeite"];
+function shoppingListExcluded(text) {
+  const normalized = text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  return SHOPPING_LIST_EXCLUDED_WORDS.some((w) => new RegExp(`\\b${w}\\b`).test(normalized));
+}
+
+/* Shopping list, derived fresh from the current Menu da semana draft: pulls
+   every ingredient from each row's matched recipe, or — for rows with no
+   matching recipe (always true for Easy, which has no recipe pages, and
+   for any typed dish that doesn't match one) — adds the dish name itself. */
+function buildShoppingList(draft) {
+  const rowSlugs = [...PLANNER_MENU_CATEGORIES, "extra"];
+  const items = [];
+
+  rowSlugs.forEach((slug) => {
+    const dishName = ((draft.menu[slug] && draft.menu[slug].dish) || "").trim();
+    if (!dishName) return;
+
+    let recipe = null;
+    let recipeCat = null;
+    if (slug === "extra") {
+      const ref = plannerRecipeRefForDishAnyCategory(dishName);
+      if (ref) {
+        recipeCat = ref.category;
+        recipe = getAllRecipes(ref.category).find((r) => r.slug === ref.slug);
+      }
+    } else if (slug !== "easy") {
+      const recipeSlug = plannerRecipeSlugForDish(slug, dishName);
+      if (recipeSlug) {
+        recipeCat = slug;
+        recipe = getAllRecipes(slug).find((r) => r.slug === recipeSlug);
+      }
+    }
+
+    if (recipe) {
+      const eff = getEffectiveRecipe(recipeCat, recipe);
+      const lines = [...(eff.ingredients || [])];
+      if (eff.ingredientsExtra && eff.ingredientsExtra.items) lines.push(...eff.ingredientsExtra.items);
+      let idx = 0;
+      lines.forEach((text) => {
+        const clean = (text || "").trim();
+        if (!clean || shoppingListExcluded(clean)) return;
+        items.push({ key: shoppingItemKey([slug, dishName, idx++]), text: clean, source: dishName });
+      });
+    } else if (!shoppingListExcluded(dishName)) {
+      items.push({ key: shoppingItemKey([slug, dishName, "self"]), text: dishName, source: dishName });
+    }
+  });
+
+  return items;
+}
+
 function plannerTotalDoses(draft) {
   const slugs = [...PLANNER_MENU_CATEGORIES, "extra"];
   return slugs.reduce((sum, slug) => {
@@ -773,6 +836,115 @@ function bindPlannerEvents() {
       const id = btn.dataset.id;
       const archive = plannerLoadArchive().filter((e) => e.id !== id);
       plannerSaveArchive(archive);
+      router();
+    });
+  });
+}
+
+/* ---------- Shopping list ---------- */
+
+function shoppingRowHtml(item) {
+  return `
+    <div class="shopping-row">
+      <label class="shopping-check">
+        <input type="checkbox" class="shopping-bought-check" data-key="${item.key}" />
+        <span class="shopping-item-text">${escapeHtml(item.text)}</span>
+      </label>
+      <label class="shopping-have-check" title="Já tenho em casa">
+        <input type="checkbox" class="shopping-have-checkbox" data-key="${item.key}" />
+        <span>Já tenho em casa</span>
+      </label>
+    </div>
+  `;
+}
+
+function shoppingSectionRowHtml(item) {
+  return `
+    <label class="shopping-check">
+      <input type="checkbox" class="shopping-section-toggle" data-key="${item.key}" checked />
+      <span class="shopping-item-text">${escapeHtml(item.text)}</span>
+    </label>
+  `;
+}
+
+function renderShoppingList() {
+  document.body.className = "cat-compras";
+  const draft = plannerLoadDraft();
+  const allItems = buildShoppingList(draft);
+  const state = window.__shoppingListCache || {};
+
+  const toBuy = allItems.filter((it) => !state[it.key]);
+  const have = allItems.filter((it) => state[it.key] === "have");
+  const bought = allItems.filter((it) => state[it.key] === "bought");
+
+  const toBuyHtml = toBuy.length
+    ? `<div class="shopping-list">${toBuy.map(shoppingRowHtml).join("")}</div>`
+    : `<div class="empty-state"><span class="emoji">🛒</span>Sem ingredientes por comprar.<br/>Adiciona pratos ao Menu da semana.</div>`;
+
+  const haveSection = have.length ? `
+    <div class="wavy-wrap">
+      <div class="wavy-frame">
+        <div class="wavy-inner">
+          <div class="list-header"><span class="list-pill">Já tenho em casa</span></div>
+          <div class="shopping-list shopping-list-secondary">${have.map(shoppingSectionRowHtml).join("")}</div>
+        </div>
+      </div>
+    </div>
+  ` : "";
+
+  const boughtSection = bought.length ? `
+    <div class="wavy-wrap">
+      <div class="wavy-frame">
+        <div class="wavy-inner">
+          <div class="list-header"><span class="list-pill">Comprado</span></div>
+          <div class="shopping-list shopping-list-secondary">${bought.map(shoppingSectionRowHtml).join("")}</div>
+        </div>
+      </div>
+    </div>
+  ` : "";
+
+  return `
+    <div class="app-shell">
+      <main class="main">
+        <div class="banner">
+          <div class="banner-left">
+            <a class="back-link" href="#/">← Categorias</a>
+            <h1>Lista de Compras</h1>
+          </div>
+          <div class="banner-tagline">Gerada automaticamente a partir do Menu da semana atual.</div>
+        </div>
+
+        ${tabbarHtml("compras")}
+
+        <div class="wavy-wrap">
+          <div class="wavy-frame">
+            <div class="wavy-inner">${toBuyHtml}</div>
+          </div>
+        </div>
+        ${haveSection}
+        ${boughtSection}
+      </main>
+    </div>
+  `;
+}
+
+function bindShoppingListEvents() {
+  document.querySelectorAll(".shopping-bought-check").forEach((cb) => {
+    cb.addEventListener("change", () => {
+      if (window.saveShoppingListStateRemote) window.saveShoppingListStateRemote(cb.dataset.key, cb.checked ? "bought" : "");
+      router();
+    });
+  });
+  document.querySelectorAll(".shopping-have-checkbox").forEach((cb) => {
+    cb.addEventListener("change", () => {
+      if (window.saveShoppingListStateRemote) window.saveShoppingListStateRemote(cb.dataset.key, cb.checked ? "have" : "");
+      router();
+    });
+  });
+  document.querySelectorAll(".shopping-section-toggle").forEach((cb) => {
+    cb.addEventListener("change", () => {
+      if (cb.checked) return;
+      if (window.saveShoppingListStateRemote) window.saveShoppingListStateRemote(cb.dataset.key, "");
       router();
     });
   });

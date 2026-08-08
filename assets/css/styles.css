@@ -73,6 +73,7 @@ body.cat-healthy  { --accent: #6FA83C; --accent-dark: #67BFAD; --light: #F1FAE6;
 body.cat-easy     { --accent: #6B7FD7; --accent-dark: #92A2E6; --light: #EEF0FC; --pastel: #DCE3FE; }
 body.cat-sides    { --accent: #DB6E97; --accent-dark: #F884AF; --light: #FDEFF4; --pastel: #FFCFE0; }
 body.cat-planner  { --accent: #F5A572; --accent-dark: #F59E72; --light: #FFF1E8; --pastel: #FFD6C2; }
+body.cat-compras  { --accent: #DB6E97; --accent-dark: #F884AF; --light: #FDEFF4; --pastel: #FFCFE0; }
 
 /* ---------- App shell ---------- */
 .app-shell {
@@ -91,7 +92,8 @@ body.cat-classics,
 body.cat-world,
 body.cat-healthy,
 body.cat-easy,
-body.cat-sides {
+body.cat-sides,
+body.cat-compras {
   background: #fff;
 }
 
@@ -128,6 +130,10 @@ body.cat-sides {
 
 .tabpill:hover { opacity: 1; }
 .tabpill.is-active { opacity: 1; box-shadow: inset 0 0 0 1.5px rgba(0,0,0,0.25); }
+
+.tabpill-icon { padding: 8px; background: #FFCFE0; }
+.tabpill-icon img { width: 18px; height: 18px; display: block; }
+
 .tabpill-planner { margin-right: 16px; position: relative; }
 .tabpill-planner::after {
   content: "";
@@ -610,6 +616,75 @@ body.cat-sides {
   color: var(--ink-soft);
   text-decoration: line-through;
   text-decoration-color: var(--ink-soft);
+}
+
+/* ---------- Shopping list ---------- */
+.shopping-list { display: flex; flex-direction: column; }
+.shopping-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--line);
+}
+.shopping-list-secondary .shopping-check { padding: 8px 0; border-bottom: 1px dashed var(--line); }
+.shopping-list-secondary .shopping-check:last-child { border-bottom: none; }
+
+.shopping-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+}
+.shopping-have-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.shopping-check input[type="checkbox"],
+.shopping-have-check input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border: 1.5px solid var(--accent-dark);
+  border-radius: 5px;
+  display: grid;
+  place-content: center;
+  cursor: pointer;
+}
+.shopping-check input[type="checkbox"]::before,
+.shopping-have-check input[type="checkbox"]::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--accent-dark);
+  transform: scale(0);
+  transition: transform 0.1s ease;
+}
+.shopping-check input[type="checkbox"]:checked::before,
+.shopping-have-check input[type="checkbox"]:checked::before { transform: scale(1); }
+
+.shopping-item-text { font-size: 14px; line-height: 1.4; }
+.shopping-check:has(input:checked) .shopping-item-text {
+  color: var(--ink-soft);
+  text-decoration: line-through;
+  text-decoration-color: var(--ink-soft);
+}
+
+@media (max-width: 480px) {
+  .shopping-row { flex-wrap: wrap; }
+  .shopping-have-check span { display: none; }
 }
 
 .notas-box { margin-top: 18px; }
