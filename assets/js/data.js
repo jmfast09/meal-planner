@@ -29,7 +29,7 @@ const CATEGORIES = [
     slug: "classics",
     short: "CLASSICS",
     title: "It's a great opportunaty",
-    tagline: "A mix of timeless favorites that never go out of style.",
+    tagline: "A mix of sea-inspired dishes and timeless favorites that never go out of style.",
     color: "#4FA3C2",
     colorDark: "#4696A6",
     light: "#EAF6FB",
