@@ -852,7 +852,7 @@ function shoppingRowHtml(item) {
       </label>
       <label class="shopping-have-check" title="Já tenho em casa">
         <input type="checkbox" class="shopping-have-checkbox" data-key="${item.key}" />
-        <span>Já tenho em casa</span>
+        <img class="shopping-have-icon" src="assets/img/icons/house.svg" alt="Já tenho em casa" />
       </label>
     </div>
   `;
