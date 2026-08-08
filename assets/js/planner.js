@@ -257,7 +257,7 @@ function plannerExtraRowHtml(draft, readOnly) {
       <div class="menu-row-field">
         ${plannerExtraOpenLinkHtml(row.dish)}
         <input type="text" class="menu-dish-input" data-category="extra" value="${escapeHtml(row.dish)}" ${readOnly ? "readonly" : ""} autocomplete="off" />
-        ${readOnly ? "" : `<button type="button" class="menu-row-generate" data-category="extra" aria-label="Gerar prato aleatório"><img src="assets/img/icons/generate.svg" alt="" /></button>`}
+        ${readOnly ? "" : `<button type="button" class="menu-row-generate" data-category="extra" aria-label="Gerar prato aleatório"><img src="assets/img/icons/sparkle-extra.svg" alt="" /></button>`}
       </div>
       <input type="text" class="menu-doses-input" data-category="extra" value="${escapeHtml(row.doses)}" ${readOnly ? "readonly" : ""} />
     </div>
