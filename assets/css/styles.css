@@ -260,7 +260,7 @@ body.cat-planner  { --accent: #F5A572; --accent-dark: #F59E72; --light: #FFF1E8;
 }
 
 .wavy-inner {
-  background: var(--paper);
+  background: #fff;
   padding: 6px 2px;
   min-height: 320px;
 }
@@ -400,7 +400,7 @@ body.cat-planner  { --accent: #F5A572; --accent-dark: #F59E72; --light: #FFF1E8;
 }
 
 /* ---------- Recipe detail page ---------- */
-.recipe-page { padding: 34px 40px 60px; max-width: 760px; margin: 0 auto; }
+.recipe-page { padding: 34px 40px 60px; max-width: 760px; margin: 0 auto; background: #fff; }
 
 .recipe-head {
   text-align: center;
@@ -633,6 +633,7 @@ body.cat-planner  { --accent: #F5A572; --accent-dark: #F59E72; --light: #FFF1E8;
   font-size: 12px;
   color: var(--ink-soft);
   letter-spacing: 0.02em;
+  background: #fff;
 }
 .crumbs a:hover { color: var(--accent-dark); }
 
