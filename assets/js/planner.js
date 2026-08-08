@@ -90,6 +90,18 @@ function plannerDishOptions(categorySlug) {
   });
 }
 
+/* Recipe (category + slug) for a dish name, searched across every Menu da
+   semana category — used by the EXTRA row, which isn't tied to just one. */
+function plannerRecipeRefForDishAnyCategory(dishName) {
+  const name = (dishName || "").trim().toLowerCase();
+  if (!name) return null;
+  for (const slug of PLANNER_MENU_CATEGORIES) {
+    const recipeSlug = plannerRecipeSlugForDish(slug, dishName);
+    if (recipeSlug) return { category: slug, slug: recipeSlug };
+  }
+  return null;
+}
+
 function plannerTotalDoses(draft) {
   const slugs = [...PLANNER_MENU_CATEGORIES, "extra"];
   return slugs.reduce((sum, slug) => {
@@ -116,7 +128,17 @@ function plannerFormatWeekLabel(iso) {
   return `${d}/${m}/${y}`;
 }
 
+function plannerRandomDishAnyCategory() {
+  const candidates = [];
+  PLANNER_MENU_CATEGORIES.forEach((slug) => {
+    plannerDishOptions(slug).forEach((d) => candidates.push(d));
+  });
+  if (candidates.length === 0) return null;
+  return candidates[Math.floor(Math.random() * candidates.length)];
+}
+
 function plannerRandomDish(categorySlug) {
+  if (categorySlug === "extra") return plannerRandomDishAnyCategory();
   const options = plannerDishOptions(categorySlug);
   if (options.length === 0) return null;
   return options[Math.floor(Math.random() * options.length)];
@@ -218,13 +240,24 @@ function plannerMenuRowHtml(slug, draft, readOnly) {
   `;
 }
 
+function plannerExtraOpenLinkHtml(dishName) {
+  const ref = plannerRecipeRefForDishAnyCategory(dishName);
+  return `
+    <a class="menu-row-open" data-category="extra" href="${ref ? `#/cat/${ref.category}/${ref.slug}` : "#"}" ${ref ? "" : "hidden"} aria-label="Ver receita" title="Ver receita">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+    </a>
+  `;
+}
+
 function plannerExtraRowHtml(draft, readOnly) {
   const row = draft.menu.extra || { dish: "", doses: "" };
   return `
     <div class="menu-row" style="--row-bg:#FFCFE0;--row-text:#F884AF">
       <span class="menu-row-label" draggable="${readOnly ? "false" : "true"}" data-category="extra">EXTRA</span>
       <div class="menu-row-field">
+        ${plannerExtraOpenLinkHtml(row.dish)}
         <input type="text" class="menu-dish-input" data-category="extra" value="${escapeHtml(row.dish)}" ${readOnly ? "readonly" : ""} autocomplete="off" />
+        ${readOnly ? "" : `<button type="button" class="menu-row-generate" data-category="extra" aria-label="Gerar prato aleatório"><img src="assets/img/icons/generate.svg" alt="" /></button>`}
       </div>
       <input type="text" class="menu-doses-input" data-category="extra" value="${escapeHtml(row.doses)}" ${readOnly ? "readonly" : ""} />
     </div>
@@ -460,6 +493,16 @@ function bindPlannerEvents() {
   function updateMenuRowOpenLink(slug) {
     const openLink = root.querySelector(`.menu-row-open[data-category="${slug}"]`);
     if (!openLink) return;
+    if (slug === "extra") {
+      const ref = plannerRecipeRefForDishAnyCategory(draft.menu.extra.dish);
+      if (ref) {
+        openLink.href = `#/cat/${ref.category}/${ref.slug}`;
+        openLink.hidden = false;
+      } else {
+        openLink.hidden = true;
+      }
+      return;
+    }
     const recipeSlug = plannerRecipeSlugForDish(slug, draft.menu[slug].dish);
     if (recipeSlug) {
       openLink.href = `#/cat/${slug}/${recipeSlug}`;
