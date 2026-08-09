@@ -122,8 +122,17 @@ function shoppingListExcluded(text) {
 
 // Serving-suggestion filler dropped from the displayed text (not the whole item).
 const SHOPPING_STRIP_PHRASES = [/\s*para acompanhar\s*/gi];
+// Tablespoon/teaspoon amounts aren't useful on a shopping list — drop the
+// whole "1 c. sopa de"/"2 c. de chá de" prefix, not just the ingredient name.
+const SHOPPING_SPOON_PREFIX = /^[\d½¼¾/.,\-\s]*\s*c\.\s*(de\s*)?(sopa|ch[aá])\s+de\s+(.+)$/i;
 function shoppingCleanText(text) {
-  return SHOPPING_STRIP_PHRASES.reduce((s, re) => s.replace(re, " "), text).replace(/\s+/g, " ").trim();
+  let s = SHOPPING_STRIP_PHRASES.reduce((acc, re) => acc.replace(re, " "), text).replace(/\s+/g, " ").trim();
+  const spoon = s.match(SHOPPING_SPOON_PREFIX);
+  if (spoon) {
+    const rest = spoon[3].trim();
+    s = rest.charAt(0).toUpperCase() + rest.slice(1);
+  }
+  return s;
 }
 
 /* Section an ingredient line falls under, guessed from keywords. Checked in
