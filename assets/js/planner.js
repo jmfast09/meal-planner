@@ -1108,15 +1108,16 @@ function renderShoppingList() {
   const allItems = buildShoppingList(draft);
   const state = window.__shoppingListCache || {};
 
+  const byText = (a, b) => a.text.localeCompare(b.text, "pt");
   const toBuy = mergeShoppingDuplicates(allItems.filter((it) => !state[it.key]));
-  const have = mergeShoppingDuplicates(allItems.filter((it) => state[it.key] === "have"));
-  const bought = mergeShoppingDuplicates(allItems.filter((it) => state[it.key] === "bought"));
+  const have = mergeShoppingDuplicates(allItems.filter((it) => state[it.key] === "have")).sort(byText);
+  const bought = mergeShoppingDuplicates(allItems.filter((it) => state[it.key] === "bought")).sort(byText);
 
   // Every section always shows, even empty ones — each keeps its own "+" so
   // an ingredient can be added to any category regardless of the auto list.
   const toBuyHtml = shoppingSectionOrder()
     .map((section) => {
-      const group = toBuy.filter((it) => it.section === section).sort((a, b) => a.order - b.order);
+      const group = toBuy.filter((it) => it.section === section).sort(byText);
       return `
         <div class="shopping-section-group" data-section="${escapeHtml(section)}">
           <div class="list-header">
