@@ -129,11 +129,11 @@ const SHOPPING_SECTIONS = [
   // Checked before Carnes/Peixes/Laticínios/Cereais so e.g. "caldo de frango",
   // "noz-moscada" and "leite de coco" land here rather than under
   // chicken/nuts/dairy.
-  { label: "Molhos e temperos", keywords: ["molho", "tempero", "oregao", "noz-moscada", "noz moscada", "canela", "colorau", "paprika", "curcuma", "caril", "alho em po", "gengibre em po", "mostarda", "ketchup", "maionese", "vinagre", "caldo", "louro", "oleo", "mel", "concentrado", "leite de coco"] },
+  { label: "Molhos e temperos", keywords: ["molho", "tempero", "oregao", "noz-moscada", "noz moscada", "canela", "colorau", "paprika", "curcuma", "caril", "alho em po", "gengibre em po", "mostarda", "ketchup", "maionese", "vinagre", "caldo", "louro", "oleo", "mel", "concentrado", "leite de coco", "polpa"] },
   { label: "Peixes", keywords: ["peixe", "atum", "bacalhau", "salm", "camar", "marisco", "mexilh", "polvo", "lula", "robalo", "dourada", "sardinha", "pescada"] },
   { label: "Carnes", keywords: ["carne", "frango", "peru", "porco", "vaca", "bovin", "borrego", "novilho", "bacon", "presunto", "fiambre", "chouric", "salpicao", "hamburguer", "almondega", "costeleta", "entrecosto", "picanha", "salsicha", "linguica", "toucinho"] },
-  { label: "Laticínios", keywords: ["leite", "queijo", "iogurte", "manteiga", "natas", "creme", "ricotta", "mozarella", "mussarela", "parmesao", "ovo", "gema", "requeijao", "mascarpone", "feta", "flamengo"] },
-  { label: "Conservas", keywords: ["conserva", "lata", "enlatad", "polpa", "azeitona", "pickles", "picles"] },
+  { label: "Laticínios e ovos", keywords: ["leite", "queijo", "iogurte", "manteiga", "natas", "creme", "ricotta", "mozarella", "mussarela", "parmesao", "ovo", "gema", "requeijao", "mascarpone", "feta", "flamengo"] },
+  { label: "Conservas", keywords: ["conserva", "lata", "enlatad", "azeitona", "pickles", "picles"] },
   { label: "Cereais e grãos", keywords: ["arroz", "massa", "esparguete", "penne", "macarrao", "feijao", "grao", "lentilha", "quinoa", "aveia", "cuscuz", "semente", "caju", "amendoim", "noz", "amendoa"] },
   { label: "Panificação e confeitaria", keywords: ["farinha", "fermento", "levedura", "acucar", "pao ralado", "pao", "baguete", "broa", "chocolate", "cacau", "bolacha", "biscoito"] },
   { label: "Frutas e verduras", keywords: ["cebola", "alho", "batata", "tomate", "pepino", "abacate", "lima", "limao", "laranja", "maca", "banana", "pimento", "cenoura", "courgette", "brocolo", "espinafre", "alface", "rucula", "milho", "cebolinho", "salsa", "coentro", "manjericao", "salada", "fruta", "verdura", "legume"] },
@@ -144,7 +144,7 @@ const SHOPPING_SECTION_ORDER = [
   "Frutas e verduras",
   "Carnes",
   "Peixes",
-  "Laticínios",
+  "Laticínios e ovos",
   "Molhos e temperos",
   "Congelados",
   "Cereais e grãos",
