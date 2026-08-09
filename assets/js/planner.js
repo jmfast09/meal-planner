@@ -313,7 +313,7 @@ function buildShoppingList(draft) {
     if (ov && ov.deleted) return;
     items.push({
       ...it,
-      text: ov && typeof ov.text === "string" ? ov.text : it.text,
+      text: ov && typeof ov.text === "string" ? shoppingCleanText(ov.text) : it.text,
       section: ov && ov.section ? ov.section : it.section,
       order: ov && typeof ov.order === "number" ? ov.order : idx,
     });
@@ -325,7 +325,7 @@ function buildShoppingList(draft) {
     if (!entry || !entry.text || !entry.text.trim()) return;
     items.push({
       key: id,
-      text: entry.text.trim(),
+      text: shoppingCleanText(entry.text.trim()),
       source: "manual",
       section: entry.section,
       order: typeof entry.order === "number" ? entry.order : rawItems.length + idx,
