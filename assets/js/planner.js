@@ -934,7 +934,7 @@ function renderShoppingList() {
     <div class="wavy-wrap">
       <div class="wavy-frame">
         <div class="wavy-inner">
-          <div class="list-header"><span class="list-pill">Já tenho em casa</span></div>
+          <div class="list-header"><span class="list-pill list-pill-inverted">Já tenho em casa</span></div>
           <div class="shopping-list shopping-list-secondary">${have.map(shoppingSectionRowHtml).join("")}</div>
         </div>
       </div>
@@ -945,7 +945,7 @@ function renderShoppingList() {
     <div class="wavy-wrap">
       <div class="wavy-frame">
         <div class="wavy-inner">
-          <div class="list-header"><span class="list-pill">Comprado</span></div>
+          <div class="list-header"><span class="list-pill list-pill-inverted">Comprado</span></div>
           <div class="shopping-list shopping-list-secondary">${bought.map(shoppingSectionRowHtml).join("")}</div>
         </div>
       </div>

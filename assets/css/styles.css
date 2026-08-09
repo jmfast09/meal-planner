@@ -299,6 +299,11 @@ body.cat-compras {
   border-radius: 999px;
 }
 
+.list-pill-inverted {
+  background: var(--accent-dark);
+  color: var(--light);
+}
+
 .list-header {
   display: flex;
   align-items: center;
