@@ -194,3 +194,57 @@ window.saveManualShoppingItemRemote = function (id, item) {
     console.error("Failed to save manual shopping item:", err);
   });
 };
+
+// ---------- Shopping list item overrides (shared) ----------
+// Per-item edits on top of the auto-derived list — keyed by item key, value
+// is a patch object: { text?, section?, deleted?, order? }.
+const shoppingOverridesRef = doc(db, "mealPlanner", "shoppingItemOverrides");
+window.__shoppingOverridesCache = {};
+
+onSnapshot(
+  shoppingOverridesRef,
+  (snap) => {
+    window.__shoppingOverridesCache = snap.exists() ? snap.data() : {};
+    if (typeof router === "function") router();
+  },
+  (err) => {
+    console.error("Firestore shopping item overrides sync error:", err);
+  }
+);
+
+window.saveShoppingItemOverrideRemote = function (key, patch) {
+  window.__shoppingOverridesCache[key] = { ...(window.__shoppingOverridesCache[key] || {}), ...patch }; // optimistic
+  setDoc(
+    shoppingOverridesRef,
+    { [key]: patch },
+    { merge: true }
+  ).catch((err) => {
+    console.error("Failed to save shopping item override:", err);
+  });
+};
+
+// ---------- Custom shopping list section order (shared) ----------
+const shoppingSectionOrderRef = doc(db, "mealPlanner", "shoppingSectionOrder");
+window.__shoppingSectionOrderCache = [];
+
+onSnapshot(
+  shoppingSectionOrderRef,
+  (snap) => {
+    window.__shoppingSectionOrderCache = snap.exists() ? (snap.data().order || []) : [];
+    if (typeof router === "function") router();
+  },
+  (err) => {
+    console.error("Firestore shopping section order sync error:", err);
+  }
+);
+
+window.saveShoppingSectionOrderRemote = function (order) {
+  window.__shoppingSectionOrderCache = order; // optimistic
+  setDoc(
+    shoppingSectionOrderRef,
+    { order },
+    { merge: true }
+  ).catch((err) => {
+    console.error("Failed to save shopping section order:", err);
+  });
+};

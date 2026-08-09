@@ -212,14 +212,17 @@ function formatShoppingAmount(n) {
 function mergeShoppingDuplicates(items) {
   const groups = new Map();
   items.forEach((it) => {
-    const base = shoppingItemBaseName(it.text);
-    if (!groups.has(base)) groups.set(base, []);
-    groups.get(base).push(it);
+    // Section is part of the grouping key so a drag & drop move to a
+    // different section splits it back out instead of hiding it.
+    const key = `${it.section}::${shoppingItemBaseName(it.text)}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(it);
   });
   return [...groups.values()].map((group) => {
     const keys = group.map((g) => g.key);
     const section = group[0].section;
-    if (group.length === 1) return { keys, text: group[0].text, section };
+    const order = Math.min(...group.map((g) => g.order));
+    if (group.length === 1) return { keys, text: group[0].text, section, order };
 
     const parsed = group.map((it) => parseShoppingQuantity(it.text));
     const summable = parsed.every((p) => p && p.kind === parsed[0].kind && p.unit === parsed[0].unit);
@@ -229,11 +232,11 @@ function mergeShoppingDuplicates(items) {
       const text = kind === "metric" ? `${sum}${unit} de ${name}`
         : kind === "noun" ? `${sum} ${unit}s de ${name}`
         : `${sum} ${name}`;
-      return { keys, text, section };
+      return { keys, text, section, order };
     }
 
     const shortest = group.reduce((a, b) => (b.text.length < a.text.length ? b : a));
-    return { keys, text: `${shortest.text} x${group.length}`, section };
+    return { keys, text: `${shortest.text} x${group.length}`, section, order };
   });
 }
 
@@ -243,7 +246,7 @@ function mergeShoppingDuplicates(items) {
    for any typed dish that doesn't match one) — adds the dish name itself. */
 function buildShoppingList(draft) {
   const rowSlugs = [...PLANNER_MENU_CATEGORIES, "extra"];
-  const items = [];
+  const rawItems = [];
 
   rowSlugs.forEach((slug) => {
     const dishName = ((draft.menu[slug] && draft.menu[slug].dish) || "").trim();
@@ -273,23 +276,68 @@ function buildShoppingList(draft) {
       lines.forEach((text) => {
         const clean = (text || "").trim();
         if (!clean || shoppingListExcluded(clean)) return;
-        items.push({ key: shoppingItemKey([slug, dishName, idx++]), text: clean, source: dishName, section: classifyShoppingItem(clean) });
+        rawItems.push({ key: shoppingItemKey([slug, dishName, idx++]), text: clean, source: dishName, section: classifyShoppingItem(clean) });
       });
     } else if (!shoppingListExcluded(dishName)) {
       // Easy dishes are frozen convenience foods (no recipe page ever exists for them).
       const section = slug === "easy" ? "Congelados" : classifyShoppingItem(dishName);
-      items.push({ key: shoppingItemKey([slug, dishName, "self"]), text: dishName, source: dishName, section });
+      rawItems.push({ key: shoppingItemKey([slug, dishName, "self"]), text: dishName, source: dishName, section });
     }
   });
 
+  // Auto-derived items only exist fresh each render, so per-item edits/moves/
+  // deletes/reordering (from inline editing and drag & drop) are persisted as
+  // overrides applied on top, keyed by the item's stable hash key.
+  const overrides = window.__shoppingOverridesCache || {};
+  const items = [];
+  rawItems.forEach((it, idx) => {
+    const ov = overrides[it.key];
+    if (ov && ov.deleted) return;
+    items.push({
+      ...it,
+      text: ov && typeof ov.text === "string" ? ov.text : it.text,
+      section: ov && ov.section ? ov.section : it.section,
+      order: ov && typeof ov.order === "number" ? ov.order : idx,
+    });
+  });
+
   const manual = window.__shoppingManualCache || {};
-  Object.keys(manual).forEach((id) => {
+  Object.keys(manual).forEach((id, idx) => {
     const entry = manual[id];
     if (!entry || !entry.text || !entry.text.trim()) return;
-    items.push({ key: id, text: entry.text.trim(), source: "manual", section: entry.section });
+    items.push({
+      key: id,
+      text: entry.text.trim(),
+      source: "manual",
+      section: entry.section,
+      order: typeof entry.order === "number" ? entry.order : rawItems.length + idx,
+    });
   });
 
   return items;
+}
+
+/* Unified edit path for a single shopping-list item, whichever storage it
+   actually lives in: manual items keep their own {section, text, order}
+   entry, auto-derived items get an override patch layered on top (see
+   buildShoppingList). "deleted" on a manual item just clears its text —
+   buildShoppingList already skips manual entries with empty text. */
+function shoppingApplyItemPatch(key, patch) {
+  const manual = window.__shoppingManualCache || {};
+  if (Object.prototype.hasOwnProperty.call(manual, key)) {
+    const current = manual[key] || {};
+    // Firestore rejects "undefined" field values, so order is only included
+    // once it actually resolves to a number (i.e. the item has been dragged).
+    const order = patch.order !== undefined ? patch.order : current.order;
+    const next = {
+      section: patch.section || current.section,
+      text: patch.deleted ? "" : (patch.text !== undefined ? patch.text : current.text),
+    };
+    if (typeof order === "number") next.order = order;
+    if (window.saveManualShoppingItemRemote) window.saveManualShoppingItemRemote(key, next);
+  } else if (window.saveShoppingItemOverrideRemote) {
+    window.saveShoppingItemOverrideRemote(key, patch);
+  }
 }
 
 function plannerTotalDoses(draft) {
@@ -970,14 +1018,29 @@ function bindPlannerEvents() {
 
 /* ---------- Shopping list ---------- */
 
+function shoppingDragHandleHtml(cls) {
+  return `
+    <span class="${cls}" title="Arrastar">
+      <svg viewBox="0 0 10 16" width="10" height="16" fill="currentColor">
+        <circle cx="2" cy="2" r="1.3"/><circle cx="8" cy="2" r="1.3"/>
+        <circle cx="2" cy="8" r="1.3"/><circle cx="8" cy="8" r="1.3"/>
+        <circle cx="2" cy="14" r="1.3"/><circle cx="8" cy="14" r="1.3"/>
+      </svg>
+    </span>
+  `;
+}
+
 function shoppingRowHtml(item) {
   const keys = item.keys.join(",");
+  const cbId = "shcb-" + keys.replace(/,/g, "_");
   return `
-    <div class="shopping-row">
-      <label class="shopping-check">
-        <input type="checkbox" class="shopping-bought-check" data-keys="${keys}" />
-        <span class="shopping-item-text">${escapeHtml(item.text)}</span>
-      </label>
+    <div class="shopping-row" data-keys="${keys}" data-order="${item.order}">
+      ${shoppingDragHandleHtml("shopping-drag-handle")}
+      <div class="shopping-check">
+        <input type="checkbox" id="${cbId}" class="shopping-bought-check" data-keys="${keys}" />
+        <label class="shopping-checkbox-visual" for="${cbId}"></label>
+        <span class="shopping-item-text" contenteditable="true" spellcheck="false" data-singleline="true" data-item-keys="${keys}">${escapeHtml(item.text)}</span>
+      </div>
       <label class="shopping-have-check" title="Já tenho em casa">
         <input type="checkbox" class="shopping-have-checkbox" data-keys="${keys}" />
         <img class="shopping-have-icon" src="assets/img/icons/house.svg" alt="Já tenho em casa" />
@@ -987,11 +1050,14 @@ function shoppingRowHtml(item) {
 }
 
 function shoppingSectionRowHtml(item) {
+  const keys = item.keys.join(",");
+  const cbId = "shcb-" + keys.replace(/,/g, "_");
   return `
-    <label class="shopping-check">
-      <input type="checkbox" class="shopping-section-toggle" data-keys="${item.keys.join(",")}" checked />
-      <span class="shopping-item-text">${escapeHtml(item.text)}</span>
-    </label>
+    <div class="shopping-check">
+      <input type="checkbox" id="${cbId}" class="shopping-section-toggle" data-keys="${keys}" checked />
+      <label class="shopping-checkbox-visual" for="${cbId}"></label>
+      <span class="shopping-item-text" contenteditable="true" spellcheck="false" data-singleline="true" data-item-keys="${keys}">${escapeHtml(item.text)}</span>
+    </div>
   `;
 }
 
@@ -1000,6 +1066,15 @@ function shoppingAddControlHtml(section) {
     return `<input type="text" class="shopping-add-input" data-section="${escapeHtml(section)}" placeholder="Adicionar ingrediente..." autocomplete="off" />`;
   }
   return `<button type="button" class="shopping-add-btn" data-section="${escapeHtml(section)}" aria-label="Adicionar ingrediente a ${escapeHtml(section)}">+</button>`;
+}
+
+/* Default section order, with any saved custom order (from dragging whole
+   sections) taking priority; sections not yet in the saved order (e.g. a
+   category that never had items before) are appended at the end. */
+function shoppingSectionOrder() {
+  const custom = window.__shoppingSectionOrderCache;
+  if (!custom || !custom.length) return SHOPPING_SECTION_ORDER;
+  return [...custom, ...SHOPPING_SECTION_ORDER.filter((s) => !custom.includes(s))];
 }
 
 function renderShoppingList() {
@@ -1013,12 +1088,15 @@ function renderShoppingList() {
   const bought = mergeShoppingDuplicates(allItems.filter((it) => state[it.key] === "bought"));
 
   const toBuyHtml = toBuy.length
-    ? SHOPPING_SECTION_ORDER
-        .map((section) => toBuy.filter((it) => it.section === section))
+    ? shoppingSectionOrder()
+        .map((section) => toBuy.filter((it) => it.section === section).sort((a, b) => a.order - b.order))
         .filter((group) => group.length)
         .map((group) => `
-          <div class="shopping-section-group">
-            <div class="list-header"><span class="list-pill">${escapeHtml(group[0].section)}</span></div>
+          <div class="shopping-section-group" data-section="${escapeHtml(group[0].section)}">
+            <div class="list-header">
+              ${shoppingDragHandleHtml("shopping-section-drag-handle")}
+              <span class="list-pill">${escapeHtml(group[0].section)}</span>
+            </div>
             <div class="shopping-list">${group.map(shoppingRowHtml).join("")}</div>
             ${shoppingAddControlHtml(group[0].section)}
           </div>
@@ -1062,7 +1140,10 @@ function renderShoppingList() {
 
         <div class="wavy-wrap">
           <div class="wavy-frame">
-            <div class="wavy-inner">${toBuyHtml}</div>
+            <div class="wavy-inner">
+              ${toBuy.length ? `<div class="shopping-list-head">Comprado</div>` : ""}
+              ${toBuyHtml}
+            </div>
           </div>
         </div>
         ${haveSection}
@@ -1123,7 +1204,126 @@ function bindShoppingListEvents() {
     });
     input.addEventListener("blur", commit);
   });
+
+  shoppingEnableItemDrag();
+  shoppingEnableSectionDrag();
 }
+
+/* Drag & drop for a single ingredient row: reorders it within its section,
+   or — dropped on another section's list — moves it there. Pointer Events
+   (not native HTML5 DnD, which touch browsers largely ignore) drive a live
+   DOM reorder as the pointer moves; on release, the new order/section is
+   read back off the DOM and persisted via shoppingApplyItemPatch. */
+function shoppingEnableItemDrag() {
+  document.querySelectorAll(".shopping-drag-handle").forEach((handle) => {
+    handle.addEventListener("pointerdown", (e) => {
+      const row = handle.closest(".shopping-row");
+      if (!row) return;
+      e.preventDefault();
+      const keys = row.dataset.keys.split(",");
+      let lastY = e.clientY;
+      row.setPointerCapture(e.pointerId);
+      row.classList.add("dragging");
+
+      const onMove = (ev) => {
+        const y = ev.clientY;
+        const target = document.elementFromPoint(ev.clientX, y);
+        const targetRow = target && target.closest(".shopping-row");
+        if (targetRow && targetRow !== row) {
+          const rect = targetRow.getBoundingClientRect();
+          const before = y < rect.top + rect.height / 2;
+          targetRow.parentNode.insertBefore(row, before ? targetRow : targetRow.nextSibling);
+        } else {
+          const targetList = target && target.closest(".shopping-list:not(.shopping-list-secondary)");
+          if (targetList && !targetList.contains(row)) targetList.appendChild(row);
+        }
+        lastY = y;
+      };
+
+      const onUp = () => {
+        row.releasePointerCapture(e.pointerId);
+        row.classList.remove("dragging");
+        document.removeEventListener("pointermove", onMove);
+        document.removeEventListener("pointerup", onUp);
+
+        const list = row.parentNode;
+        const group = row.closest(".shopping-section-group");
+        const section = group ? group.dataset.section : null;
+        const rows = [...list.querySelectorAll(".shopping-row")];
+        const idx = rows.indexOf(row);
+        const prevOrder = idx > 0 ? parseFloat(rows[idx - 1].dataset.order) : null;
+        const nextOrder = idx < rows.length - 1 ? parseFloat(rows[idx + 1].dataset.order) : null;
+        let order;
+        if (prevOrder != null && nextOrder != null) order = (prevOrder + nextOrder) / 2;
+        else if (prevOrder != null) order = prevOrder + 1;
+        else if (nextOrder != null) order = nextOrder - 1;
+        else order = 0;
+
+        keys.forEach((key) => shoppingApplyItemPatch(key, section ? { order, section } : { order }));
+        router();
+      };
+
+      document.addEventListener("pointermove", onMove);
+      document.addEventListener("pointerup", onUp);
+    });
+  });
+}
+
+/* Drag & drop for a whole section block — reorders it among the other
+   sections and persists the resulting order so it stays that way. */
+function shoppingEnableSectionDrag() {
+  document.querySelectorAll(".shopping-section-drag-handle").forEach((handle) => {
+    handle.addEventListener("pointerdown", (e) => {
+      const group = handle.closest(".shopping-section-group");
+      if (!group) return;
+      e.preventDefault();
+      group.setPointerCapture(e.pointerId);
+      group.classList.add("dragging");
+
+      const onMove = (ev) => {
+        const target = document.elementFromPoint(ev.clientX, ev.clientY);
+        const targetGroup = target && target.closest(".shopping-section-group");
+        if (targetGroup && targetGroup !== group) {
+          const rect = targetGroup.getBoundingClientRect();
+          const before = ev.clientY < rect.top + rect.height / 2;
+          targetGroup.parentNode.insertBefore(group, before ? targetGroup : targetGroup.nextSibling);
+        }
+      };
+
+      const onUp = () => {
+        group.releasePointerCapture(e.pointerId);
+        group.classList.remove("dragging");
+        document.removeEventListener("pointermove", onMove);
+        document.removeEventListener("pointerup", onUp);
+
+        const order = [...group.parentNode.querySelectorAll(".shopping-section-group")].map((g) => g.dataset.section);
+        if (window.saveShoppingSectionOrderRemote) window.saveShoppingSectionOrderRemote(order);
+        router();
+      };
+
+      document.addEventListener("pointermove", onMove);
+      document.addEventListener("pointerup", onUp);
+    });
+  });
+}
+
+/* Delegated: inline-edited ingredient text (contenteditable) — empty text
+   deletes the item(s), otherwise the new text is saved on the first
+   underlying key and any other keys sharing a merged row are dropped (a
+   merged/summed row is collapsed into one line once edited). */
+document.addEventListener("focusout", (e) => {
+  const el = e.target.closest(".shopping-item-text[data-item-keys]");
+  if (!el || !el.isContentEditable) return;
+  const keys = el.dataset.itemKeys.split(",");
+  const text = el.textContent.replace(/\u00a0/g, " ").trim();
+  if (!text) {
+    keys.forEach((key) => shoppingApplyItemPatch(key, { deleted: true }));
+  } else {
+    shoppingApplyItemPatch(keys[0], { text });
+    keys.slice(1).forEach((key) => shoppingApplyItemPatch(key, { deleted: true }));
+  }
+  router();
+});
 
 document.addEventListener("click", (e) => {
   if (

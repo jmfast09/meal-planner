@@ -629,8 +629,26 @@ body.cat-compras {
 }
 
 /* ---------- Shopping list ---------- */
+.shopping-list-head { font-size: 11px; font-style: italic; font-weight: 700; color: var(--accent-dark); margin-bottom: 8px; }
+
 .shopping-section-group + .shopping-section-group { margin-top: 28px; }
+.shopping-section-group .list-header { justify-content: flex-start; }
+.shopping-section-group.dragging { opacity: 0.6; }
 .shopping-list { display: flex; flex-direction: column; }
+
+.shopping-section-drag-handle,
+.shopping-drag-handle {
+  display: flex;
+  align-items: center;
+  color: var(--ink-soft);
+  cursor: grab;
+  touch-action: none;
+  flex-shrink: 0;
+}
+.shopping-section-drag-handle { color: var(--accent-dark); opacity: 0.6; }
+.shopping-section-drag-handle:hover { opacity: 1; }
+.shopping-drag-handle:active,
+.shopping-section-drag-handle:active { cursor: grabbing; }
 
 .shopping-add-btn {
   display: block;
@@ -675,7 +693,6 @@ body.cat-compras {
   display: flex;
   align-items: center;
   gap: 10px;
-  cursor: pointer;
   flex: 1;
   min-width: 0;
 }
@@ -702,34 +719,40 @@ body.cat-compras {
 .shopping-have-check:has(input:checked) .shopping-have-icon { opacity: 1; transform: scale(1.08); }
 
 .shopping-check input[type="checkbox"] {
-  appearance: none;
-  -webkit-appearance: none;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.shopping-checkbox-visual {
+  position: relative;
   width: 18px;
   height: 18px;
   flex-shrink: 0;
   border: 1.5px solid var(--accent-dark);
   border-radius: 5px;
-  display: grid;
-  place-content: center;
   cursor: pointer;
 }
-.shopping-check input[type="checkbox"]::before {
+.shopping-checkbox-visual::before {
   content: "";
-  width: 10px;
-  height: 10px;
+  position: absolute;
+  inset: 3px;
   border-radius: 2px;
   background: var(--accent-dark);
   transform: scale(0);
   transition: transform 0.1s ease;
 }
-.shopping-check input[type="checkbox"]:checked::before { transform: scale(1); }
+.shopping-check input[type="checkbox"]:checked + .shopping-checkbox-visual::before { transform: scale(1); }
 
-.shopping-item-text { font-size: 14px; line-height: 1.4; }
+.shopping-item-text { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; cursor: text; outline: none; }
 .shopping-check:has(input:checked) .shopping-item-text {
   color: var(--ink-soft);
   text-decoration: line-through;
   text-decoration-color: var(--ink-soft);
 }
+
+.shopping-row.dragging { opacity: 0.5; background: var(--light); }
 
 @media (max-width: 480px) {
   .shopping-row { flex-wrap: wrap; }
