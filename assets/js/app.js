@@ -443,7 +443,10 @@ function renderRecipe(catSlug, recipeSlug) {
               ${notasHtml}
             </div>
             <div class="box">
-              <div class="box-header">Preparação</div>
+              <div class="box-header box-header-prep">
+                Preparação
+                <button type="button" class="prep-unselect-all" aria-label="Desmarcar tudo" title="Desmarcar tudo">×</button>
+              </div>
               <div class="box-body">
                 ${prepChecklistHtml(cat.slug, recipe.slug, recipe.preparacao)}
               </div>
@@ -734,6 +737,18 @@ document.addEventListener("change", (e) => {
     if (input.checked) localStorage.setItem(key, "1");
     else localStorage.removeItem(key);
   }
+});
+
+// Delegated listener: clears every step's checked state for this recipe.
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".prep-unselect-all");
+  if (!btn) return;
+  const box = btn.closest(".box");
+  if (!box) return;
+  box.querySelectorAll('.prep-step input[type="checkbox"]').forEach((cb) => {
+    cb.checked = false;
+    if (cb.dataset.prepKey) localStorage.removeItem(cb.dataset.prepKey);
+  });
 });
 
 // Delegated listener: uploaded icon on the new-recipe editor — resize/compress
