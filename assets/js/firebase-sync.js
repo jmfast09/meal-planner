@@ -167,3 +167,30 @@ window.saveShoppingListStateRemote = function (key, state) {
     console.error("Failed to save shopping list state:", err);
   });
 };
+
+// ---------- Manually-added shopping list items (shared) ----------
+// Keyed by a generated id — value is { section, text }.
+const shoppingManualRef = doc(db, "mealPlanner", "shoppingManualItems");
+window.__shoppingManualCache = {};
+
+onSnapshot(
+  shoppingManualRef,
+  (snap) => {
+    window.__shoppingManualCache = snap.exists() ? snap.data() : {};
+    if (typeof router === "function") router();
+  },
+  (err) => {
+    console.error("Firestore manual shopping items sync error:", err);
+  }
+);
+
+window.saveManualShoppingItemRemote = function (id, item) {
+  window.__shoppingManualCache[id] = item; // optimistic
+  setDoc(
+    shoppingManualRef,
+    { [id]: item },
+    { merge: true }
+  ).catch((err) => {
+    console.error("Failed to save manual shopping item:", err);
+  });
+};

@@ -9,6 +9,7 @@
 
 let plannerViewMode = "current"; // "current" | "archive"
 let plannerArchiveOpenId = null; // id of an archived week currently expanded
+let shoppingAddOpenSection = null; // shopping-list section currently showing its "+" input
 
 function plannerEmptyDraft() {
   const menu = {};
@@ -279,6 +280,13 @@ function buildShoppingList(draft) {
       const section = slug === "easy" ? "Congelados" : classifyShoppingItem(dishName);
       items.push({ key: shoppingItemKey([slug, dishName, "self"]), text: dishName, source: dishName, section });
     }
+  });
+
+  const manual = window.__shoppingManualCache || {};
+  Object.keys(manual).forEach((id) => {
+    const entry = manual[id];
+    if (!entry || !entry.text || !entry.text.trim()) return;
+    items.push({ key: id, text: entry.text.trim(), source: "manual", section: entry.section });
   });
 
   return items;
@@ -987,6 +995,13 @@ function shoppingSectionRowHtml(item) {
   `;
 }
 
+function shoppingAddControlHtml(section) {
+  if (shoppingAddOpenSection === section) {
+    return `<input type="text" class="shopping-add-input" data-section="${escapeHtml(section)}" placeholder="Adicionar ingrediente..." autocomplete="off" />`;
+  }
+  return `<button type="button" class="shopping-add-btn" data-section="${escapeHtml(section)}" aria-label="Adicionar ingrediente a ${escapeHtml(section)}">+</button>`;
+}
+
 function renderShoppingList() {
   document.body.className = "cat-compras";
   const draft = plannerLoadDraft();
@@ -1005,6 +1020,7 @@ function renderShoppingList() {
           <div class="shopping-section-group">
             <div class="list-header"><span class="list-pill">${escapeHtml(group[0].section)}</span></div>
             <div class="shopping-list">${group.map(shoppingRowHtml).join("")}</div>
+            ${shoppingAddControlHtml(group[0].section)}
           </div>
         `).join("")
     : `<div class="empty-state"><span class="emoji">🛒</span>Sem ingredientes por comprar.<br/>Adiciona pratos ao Menu da semana.</div>`;
@@ -1079,6 +1095,33 @@ function bindShoppingListEvents() {
       setAll(cb, "");
       router();
     });
+  });
+  document.querySelectorAll(".shopping-add-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      shoppingAddOpenSection = btn.dataset.section;
+      router();
+      const input = document.querySelector(".shopping-add-input");
+      if (input) input.focus();
+    });
+  });
+  document.querySelectorAll(".shopping-add-input").forEach((input) => {
+    let committed = false;
+    const commit = () => {
+      if (committed) return;
+      committed = true;
+      const text = input.value.trim();
+      shoppingAddOpenSection = null;
+      if (text && window.saveManualShoppingItemRemote) {
+        const id = "m" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        window.saveManualShoppingItemRemote(id, { section: input.dataset.section, text });
+      }
+      router();
+    };
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); commit(); }
+      else if (e.key === "Escape") { committed = true; shoppingAddOpenSection = null; router(); }
+    });
+    input.addEventListener("blur", commit);
   });
 }
 

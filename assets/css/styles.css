@@ -631,6 +631,35 @@ body.cat-compras {
 /* ---------- Shopping list ---------- */
 .shopping-section-group + .shopping-section-group { margin-top: 28px; }
 .shopping-list { display: flex; flex-direction: column; }
+
+.shopping-add-btn {
+  display: block;
+  width: 100%;
+  padding: 10px 0;
+  border: none;
+  background: none;
+  text-align: right;
+  color: var(--accent-dark);
+  font-family: var(--font-body);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.shopping-add-btn:hover { opacity: 0.75; }
+
+.shopping-add-input {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  border: none;
+  border-bottom: 1.5px solid var(--accent-dark);
+  background: none;
+  padding: 6px 2px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink);
+}
+.shopping-add-input:focus { outline: none; }
 .shopping-row {
   display: flex;
   align-items: center;
