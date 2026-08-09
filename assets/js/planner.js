@@ -120,6 +120,12 @@ function shoppingListExcluded(text) {
   return SHOPPING_LIST_EXCLUDED_WORDS.some((w) => new RegExp(`\\b${w}\\b`).test(normalized));
 }
 
+// Serving-suggestion filler dropped from the displayed text (not the whole item).
+const SHOPPING_STRIP_PHRASES = [/\s*para acompanhar\s*/gi];
+function shoppingCleanText(text) {
+  return SHOPPING_STRIP_PHRASES.reduce((s, re) => s.replace(re, " "), text).replace(/\s+/g, " ").trim();
+}
+
 /* Section an ingredient line falls under, guessed from keywords. Checked in
    order — more specific buckets (e.g. Congelados, Conservas) come before
    broad ones (Frutas e legumes) so e.g. "espinafres congelados" lands in
@@ -274,14 +280,17 @@ function buildShoppingList(draft) {
       if (eff.ingredientsExtra && eff.ingredientsExtra.items) lines.push(...eff.ingredientsExtra.items);
       let idx = 0;
       lines.forEach((text) => {
-        const clean = (text || "").trim();
+        const clean = shoppingCleanText((text || "").trim());
         if (!clean || shoppingListExcluded(clean)) return;
         rawItems.push({ key: shoppingItemKey([slug, dishName, idx++]), text: clean, source: dishName, section: classifyShoppingItem(clean) });
       });
-    } else if (!shoppingListExcluded(dishName)) {
-      // Easy dishes are frozen convenience foods (no recipe page ever exists for them).
-      const section = slug === "easy" ? "Congelados" : classifyShoppingItem(dishName);
-      rawItems.push({ key: shoppingItemKey([slug, dishName, "self"]), text: dishName, source: dishName, section });
+    } else {
+      const cleanDish = shoppingCleanText(dishName);
+      if (cleanDish && !shoppingListExcluded(cleanDish)) {
+        // Easy dishes are frozen convenience foods (no recipe page ever exists for them).
+        const section = slug === "easy" ? "Congelados" : classifyShoppingItem(cleanDish);
+        rawItems.push({ key: shoppingItemKey([slug, dishName, "self"]), text: cleanDish, source: dishName, section });
+      }
     }
   });
 
@@ -1087,21 +1096,22 @@ function renderShoppingList() {
   const have = mergeShoppingDuplicates(allItems.filter((it) => state[it.key] === "have"));
   const bought = mergeShoppingDuplicates(allItems.filter((it) => state[it.key] === "bought"));
 
-  const toBuyHtml = toBuy.length
-    ? shoppingSectionOrder()
-        .map((section) => toBuy.filter((it) => it.section === section).sort((a, b) => a.order - b.order))
-        .filter((group) => group.length)
-        .map((group) => `
-          <div class="shopping-section-group" data-section="${escapeHtml(group[0].section)}">
-            <div class="list-header">
-              ${shoppingDragHandleHtml("shopping-section-drag-handle")}
-              <span class="list-pill">${escapeHtml(group[0].section)}</span>
-            </div>
-            <div class="shopping-list">${group.map(shoppingRowHtml).join("")}</div>
-            ${shoppingAddControlHtml(group[0].section)}
+  // Every section always shows, even empty ones — each keeps its own "+" so
+  // an ingredient can be added to any category regardless of the auto list.
+  const toBuyHtml = shoppingSectionOrder()
+    .map((section) => {
+      const group = toBuy.filter((it) => it.section === section).sort((a, b) => a.order - b.order);
+      return `
+        <div class="shopping-section-group" data-section="${escapeHtml(section)}">
+          <div class="list-header">
+            ${shoppingDragHandleHtml("shopping-section-drag-handle")}
+            <span class="list-pill">${escapeHtml(section)}</span>
           </div>
-        `).join("")
-    : `<div class="empty-state"><span class="emoji">🛒</span>Sem ingredientes por comprar.<br/>Adiciona pratos ao Menu da semana.</div>`;
+          ${group.length ? `<div class="shopping-list">${group.map(shoppingRowHtml).join("")}</div>` : ""}
+          ${shoppingAddControlHtml(section)}
+        </div>
+      `;
+    }).join("");
 
   const haveSection = have.length ? `
     <div class="wavy-wrap">
@@ -1140,10 +1150,7 @@ function renderShoppingList() {
 
         <div class="wavy-wrap">
           <div class="wavy-frame">
-            <div class="wavy-inner">
-              ${toBuy.length ? `<div class="shopping-list-head">Comprado</div>` : ""}
-              ${toBuyHtml}
-            </div>
+            <div class="wavy-inner">${toBuyHtml}</div>
           </div>
         </div>
         ${haveSection}

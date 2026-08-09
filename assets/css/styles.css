@@ -629,8 +629,6 @@ body.cat-compras {
 }
 
 /* ---------- Shopping list ---------- */
-.shopping-list-head { font-size: 11px; font-style: italic; font-weight: 700; color: var(--accent-dark); margin-bottom: 8px; }
-
 .shopping-section-group + .shopping-section-group { margin-top: 28px; }
 .shopping-section-group .list-header { justify-content: flex-start; }
 .shopping-section-group.dragging { opacity: 0.6; }
@@ -649,6 +647,11 @@ body.cat-compras {
 .shopping-section-drag-handle:hover { opacity: 1; }
 .shopping-drag-handle:active,
 .shopping-section-drag-handle:active { cursor: grabbing; }
+
+/* Drag & drop still works on ingredient rows — the icon is just hidden so
+   it doesn't clutter the row; the handle keeps its usual hit area. */
+.shopping-drag-handle svg { opacity: 0; }
+.shopping-drag-handle { cursor: default; }
 
 .shopping-add-btn {
   display: block;
