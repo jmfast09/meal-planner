@@ -121,9 +121,9 @@ function shoppingListExcluded(text) {
 
 /* Section an ingredient line falls under, guessed from keywords. Checked in
    order — more specific buckets (e.g. Congelados, Conservas) come before
-   broad ones (Frutas e verduras) so e.g. "espinafres congelados" lands in
-   Congelados rather than Frutas e verduras, and "alho em pó" in Molhos e
-   temperos rather than under fresh Frutas e verduras "alho". */
+   broad ones (Frutas e legumes) so e.g. "espinafres congelados" lands in
+   Congelados rather than Frutas e legumes, and "alho em pó" in Molhos e
+   temperos rather than under fresh Frutas e legumes "alho". */
 const SHOPPING_SECTIONS = [
   { label: "Congelados", keywords: ["congelad"] },
   // Checked before Carnes/Peixes/Laticínios/Cereais so e.g. "caldo de frango",
@@ -136,12 +136,12 @@ const SHOPPING_SECTIONS = [
   { label: "Conservas", keywords: ["conserva", "lata", "enlatad", "azeitona", "pickles", "picles"] },
   { label: "Cereais e grãos", keywords: ["arroz", "massa", "esparguete", "penne", "macarrao", "feijao", "grao", "lentilha", "quinoa", "aveia", "cuscuz", "semente", "caju", "amendoim", "noz", "amendoa"] },
   { label: "Panificação e confeitaria", keywords: ["farinha", "fermento", "levedura", "acucar", "pao ralado", "pao", "baguete", "broa", "chocolate", "cacau", "bolacha", "biscoito"] },
-  { label: "Frutas e verduras", keywords: ["cebola", "alho", "batata", "tomate", "pepino", "abacate", "lima", "limao", "laranja", "maca", "banana", "pimento", "cenoura", "courgette", "brocolo", "espinafre", "alface", "rucula", "milho", "cebolinho", "salsa", "coentro", "manjericao", "salada", "fruta", "verdura", "legume"] },
+  { label: "Frutas e legumes", keywords: ["cebola", "alho", "batata", "tomate", "pepino", "abacate", "lima", "limao", "laranja", "maca", "banana", "pimento", "cenoura", "courgette", "brocolo", "espinafre", "alface", "rucula", "milho", "cebolinho", "salsa", "coentro", "manjericao", "salada", "fruta", "verdura", "legume"] },
 ];
 // Display order on the page — independent of the keyword-matching priority above.
 const SHOPPING_SECTION_ORDER = [
   "Panificação e confeitaria",
-  "Frutas e verduras",
+  "Frutas e legumes",
   "Carnes",
   "Peixes",
   "Laticínios e ovos",
