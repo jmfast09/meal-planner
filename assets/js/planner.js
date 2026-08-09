@@ -158,6 +158,38 @@ function classifyShoppingItem(text) {
   return found ? found.label : "Outros";
 }
 
+/* Strips a leading quantity/unit phrase (e.g. "8 c. de sopa de", "2 dentes
+   de", "500g de") so two lines for the same ingredient in different amounts
+   ("Queijo cottage" / "8 c. de sopa de queijo cottage") can be recognized as
+   duplicates and merged. */
+function shoppingItemBaseName(text) {
+  let s = text.trim();
+  s = s.replace(/^[\d\u00bd\u00bc\u00be/.,\-\s]+\s*(?:kg|g|ml|l|cm)?\.?\s*/i, "");
+  s = s.replace(/^(c\.\s*(de\s*)?(sopa|ch[a\u00e1])|dentes?|folhas?|embalage(m|ns)|cubos?|bolbos?|gemas?|ma[c\u00e7]arocas?)\s+(de\s+)?/i, "");
+  s = s.replace(/^de\s+/i, "");
+  return s.trim().toLowerCase();
+}
+
+/* Collapses items that share a base name into one row, appending "xN" to
+   the shortest (least quantity-prefixed) label. Keeps every underlying
+   item's key so checking the merged row updates all of them together. */
+function mergeShoppingDuplicates(items) {
+  const groups = new Map();
+  items.forEach((it) => {
+    const base = shoppingItemBaseName(it.text);
+    if (!groups.has(base)) groups.set(base, []);
+    groups.get(base).push(it);
+  });
+  return [...groups.values()].map((group) => {
+    const shortest = group.reduce((a, b) => (b.text.length < a.text.length ? b : a));
+    return {
+      keys: group.map((g) => g.key),
+      text: group.length > 1 ? `${shortest.text} x${group.length}` : shortest.text,
+      section: group[0].section,
+    };
+  });
+}
+
 /* Shopping list, derived fresh from the current Menu da semana draft: pulls
    every ingredient from each row's matched recipe, or — for rows with no
    matching recipe (always true for Easy, which has no recipe pages, and
@@ -885,14 +917,15 @@ function bindPlannerEvents() {
 /* ---------- Shopping list ---------- */
 
 function shoppingRowHtml(item) {
+  const keys = item.keys.join(",");
   return `
     <div class="shopping-row">
       <label class="shopping-check">
-        <input type="checkbox" class="shopping-bought-check" data-key="${item.key}" />
+        <input type="checkbox" class="shopping-bought-check" data-keys="${keys}" />
         <span class="shopping-item-text">${escapeHtml(item.text)}</span>
       </label>
       <label class="shopping-have-check" title="Já tenho em casa">
-        <input type="checkbox" class="shopping-have-checkbox" data-key="${item.key}" />
+        <input type="checkbox" class="shopping-have-checkbox" data-keys="${keys}" />
         <img class="shopping-have-icon" src="assets/img/icons/house.svg" alt="Já tenho em casa" />
       </label>
     </div>
@@ -902,7 +935,7 @@ function shoppingRowHtml(item) {
 function shoppingSectionRowHtml(item) {
   return `
     <label class="shopping-check">
-      <input type="checkbox" class="shopping-section-toggle" data-key="${item.key}" checked />
+      <input type="checkbox" class="shopping-section-toggle" data-keys="${item.keys.join(",")}" checked />
       <span class="shopping-item-text">${escapeHtml(item.text)}</span>
     </label>
   `;
@@ -914,9 +947,9 @@ function renderShoppingList() {
   const allItems = buildShoppingList(draft);
   const state = window.__shoppingListCache || {};
 
-  const toBuy = allItems.filter((it) => !state[it.key]);
-  const have = allItems.filter((it) => state[it.key] === "have");
-  const bought = allItems.filter((it) => state[it.key] === "bought");
+  const toBuy = mergeShoppingDuplicates(allItems.filter((it) => !state[it.key]));
+  const have = mergeShoppingDuplicates(allItems.filter((it) => state[it.key] === "have"));
+  const bought = mergeShoppingDuplicates(allItems.filter((it) => state[it.key] === "bought"));
 
   const toBuyHtml = toBuy.length
     ? SHOPPING_SECTION_ORDER
@@ -978,22 +1011,26 @@ function renderShoppingList() {
 }
 
 function bindShoppingListEvents() {
+  const setAll = (cb, state) => {
+    if (!window.saveShoppingListStateRemote) return;
+    cb.dataset.keys.split(",").forEach((key) => window.saveShoppingListStateRemote(key, state));
+  };
   document.querySelectorAll(".shopping-bought-check").forEach((cb) => {
     cb.addEventListener("change", () => {
-      if (window.saveShoppingListStateRemote) window.saveShoppingListStateRemote(cb.dataset.key, cb.checked ? "bought" : "");
+      setAll(cb, cb.checked ? "bought" : "");
       router();
     });
   });
   document.querySelectorAll(".shopping-have-checkbox").forEach((cb) => {
     cb.addEventListener("change", () => {
-      if (window.saveShoppingListStateRemote) window.saveShoppingListStateRemote(cb.dataset.key, cb.checked ? "have" : "");
+      setAll(cb, cb.checked ? "have" : "");
       router();
     });
   });
   document.querySelectorAll(".shopping-section-toggle").forEach((cb) => {
     cb.addEventListener("change", () => {
       if (cb.checked) return;
-      if (window.saveShoppingListStateRemote) window.saveShoppingListStateRemote(cb.dataset.key, "");
+      setAll(cb, "");
       router();
     });
   });
