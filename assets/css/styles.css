@@ -624,6 +624,7 @@ body.cat-compras {
 }
 
 /* ---------- Shopping list ---------- */
+.shopping-section-group + .shopping-section-group { margin-top: 28px; }
 .shopping-list { display: flex; flex-direction: column; }
 .shopping-row {
   display: flex;

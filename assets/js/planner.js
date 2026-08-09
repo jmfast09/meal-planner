@@ -119,6 +119,44 @@ function shoppingListExcluded(text) {
   return SHOPPING_LIST_EXCLUDED_WORDS.some((w) => new RegExp(`\\b${w}\\b`).test(normalized));
 }
 
+/* Section an ingredient line falls under, guessed from keywords. Checked in
+   order — more specific buckets (e.g. Congelados, Conservas) come before
+   broad ones (Frutas e verduras) so e.g. "espinafres congelados" lands in
+   Congelados rather than Frutas e verduras, and "alho em pó" in Molhos e
+   temperos rather than under fresh Frutas e verduras "alho". */
+const SHOPPING_SECTIONS = [
+  { label: "Congelados", keywords: ["congelad"] },
+  // Checked before Carnes/Peixes/Cereais so e.g. "caldo de frango" and
+  // "noz-moscada" land here rather than under chicken/nuts.
+  { label: "Molhos e temperos", keywords: ["molho", "tempero", "oregao", "noz-moscada", "noz moscada", "canela", "colorau", "paprika", "curcuma", "caril", "alho em po", "gengibre em po", "mostarda", "ketchup", "maionese", "vinagre", "caldo", "louro", "oleo"] },
+  { label: "Peixes", keywords: ["peixe", "atum", "bacalhau", "salm", "camar", "marisco", "mexilh", "polvo", "lula", "robalo", "dourada", "sardinha", "pescada"] },
+  { label: "Carnes", keywords: ["carne", "frango", "peru", "porco", "vaca", "bovin", "borrego", "novilho", "bacon", "presunto", "fiambre", "chouric", "salpicao", "hamburguer", "almondega", "costeleta", "entrecosto", "picanha", "salsicha", "linguica", "toucinho"] },
+  { label: "Laticínios", keywords: ["leite", "queijo", "iogurte", "manteiga", "natas", "creme", "ricotta", "mozarella", "mussarela", "parmesao", "ovo", "gema", "requeijao", "mascarpone", "feta", "flamengo"] },
+  { label: "Conservas", keywords: ["conserva", "lata", "enlatad", "polpa", "azeitona", "pickles", "picles"] },
+  { label: "Cereais e grãos", keywords: ["arroz", "massa", "esparguete", "penne", "macarrao", "feijao", "grao", "lentilha", "quinoa", "aveia", "cuscuz", "semente", "caju", "amendoim", "noz", "amendoa"] },
+  { label: "Panificação e confeitaria", keywords: ["farinha", "fermento", "levedura", "acucar", "pao ralado", "pao", "baguete", "broa", "chocolate", "cacau", "bolacha", "biscoito"] },
+  { label: "Frutas e verduras", keywords: ["cebola", "alho", "batata", "tomate", "pepino", "abacate", "lima", "limao", "laranja", "maca", "banana", "pimento", "cenoura", "courgette", "brocolo", "espinafre", "alface", "rucula", "milho", "cebolinho", "salsa", "coentro", "manjericao", "salada", "fruta", "verdura", "legume"] },
+];
+// Display order on the page — independent of the keyword-matching priority above.
+const SHOPPING_SECTION_ORDER = [
+  "Panificação e confeitaria",
+  "Frutas e verduras",
+  "Carnes",
+  "Peixes",
+  "Laticínios",
+  "Molhos e temperos",
+  "Congelados",
+  "Cereais e grãos",
+  "Conservas",
+  "Outros",
+];
+
+function classifyShoppingItem(text) {
+  const normalized = text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const found = SHOPPING_SECTIONS.find((section) => section.keywords.some((k) => normalized.includes(k)));
+  return found ? found.label : "Outros";
+}
+
 /* Shopping list, derived fresh from the current Menu da semana draft: pulls
    every ingredient from each row's matched recipe, or — for rows with no
    matching recipe (always true for Easy, which has no recipe pages, and
@@ -155,10 +193,10 @@ function buildShoppingList(draft) {
       lines.forEach((text) => {
         const clean = (text || "").trim();
         if (!clean || shoppingListExcluded(clean)) return;
-        items.push({ key: shoppingItemKey([slug, dishName, idx++]), text: clean, source: dishName });
+        items.push({ key: shoppingItemKey([slug, dishName, idx++]), text: clean, source: dishName, section: classifyShoppingItem(clean) });
       });
     } else if (!shoppingListExcluded(dishName)) {
-      items.push({ key: shoppingItemKey([slug, dishName, "self"]), text: dishName, source: dishName });
+      items.push({ key: shoppingItemKey([slug, dishName, "self"]), text: dishName, source: dishName, section: classifyShoppingItem(dishName) });
     }
   });
 
@@ -878,7 +916,15 @@ function renderShoppingList() {
   const bought = allItems.filter((it) => state[it.key] === "bought");
 
   const toBuyHtml = toBuy.length
-    ? `<div class="shopping-list">${toBuy.map(shoppingRowHtml).join("")}</div>`
+    ? SHOPPING_SECTION_ORDER
+        .map((section) => toBuy.filter((it) => it.section === section))
+        .filter((group) => group.length)
+        .map((group) => `
+          <div class="shopping-section-group">
+            <div class="list-header"><span class="list-pill">${escapeHtml(group[0].section)}</span></div>
+            <div class="shopping-list">${group.map(shoppingRowHtml).join("")}</div>
+          </div>
+        `).join("")
     : `<div class="empty-state"><span class="emoji">🛒</span>Sem ingredientes por comprar.<br/>Adiciona pratos ao Menu da semana.</div>`;
 
   const haveSection = have.length ? `
