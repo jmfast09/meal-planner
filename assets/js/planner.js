@@ -1083,7 +1083,23 @@ function shoppingAddControlHtml(section) {
 function shoppingSectionOrder() {
   const custom = window.__shoppingSectionOrderCache;
   if (!custom || !custom.length) return SHOPPING_SECTION_ORDER;
-  return [...custom, ...SHOPPING_SECTION_ORDER.filter((s) => !custom.includes(s))];
+
+  // Any section missing from the saved custom order (e.g. one that was
+  // empty — and so not rendered/draggable — the last time a drag was saved)
+  // is inserted right after its usual default-order predecessor, rather
+  // than dumped at the end, so e.g. an empty Peixes still lands right after
+  // Carnes instead of drifting to the bottom of the list.
+  const result = [...custom];
+  SHOPPING_SECTION_ORDER.forEach((section, idx) => {
+    if (result.includes(section)) return;
+    let insertAfter = -1;
+    for (let i = idx - 1; i >= 0; i--) {
+      const prevIdx = result.indexOf(SHOPPING_SECTION_ORDER[i]);
+      if (prevIdx !== -1) { insertAfter = prevIdx; break; }
+    }
+    result.splice(insertAfter + 1, 0, section);
+  });
+  return result;
 }
 
 function renderShoppingList() {
