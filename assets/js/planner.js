@@ -170,9 +170,44 @@ function shoppingItemBaseName(text) {
   return s.trim().toLowerCase();
 }
 
-/* Collapses items that share a base name into one row, appending "xN" to
-   the shortest (least quantity-prefixed) label. Keeps every underlying
-   item's key so checking the merged row updates all of them together. */
+/* Parses a leading quantity out of an ingredient line so duplicate amounts
+   can be added together instead of just counted. Returns null (not
+   summable) for tablespoon/teaspoon amounts — the user asked those to stay
+   as "xN" — and for anything without a parseable leading number. */
+function parseShoppingQuantity(text) {
+  const s = text.trim();
+  if (/^[\d½¼¾/.,\-\s]+\s*c\.\s*(de\s*)?(sopa|ch[aá])/i.test(s)) return null;
+
+  let m = s.match(/^(\d+(?:[.,]\d+)?)\s*(kg|g|ml|l|litros?)\b\.?\s*(?:de\s+)?(.+)$/i);
+  if (m) {
+    let unit = m[2].toLowerCase();
+    if (unit.startsWith("litro")) unit = "l";
+    return { amount: parseFloat(m[1].replace(",", ".")), unit, name: m[3].trim(), kind: "metric" };
+  }
+
+  m = s.match(/^(\d+(?:[.,]\d+)?)\s+(dentes?|folhas?|embalage(?:m|ns)|cubos?|bolbos?|gemas?|ma[cç]arocas?)\s+de\s+(.+)$/i);
+  if (m) {
+    const stem = m[2].toLowerCase().replace(/s$/, "");
+    return { amount: parseFloat(m[1].replace(",", ".")), unit: stem, name: m[3].trim(), kind: "noun" };
+  }
+
+  m = s.match(/^(\d+(?:[.,]\d+)?)\s+(.+)$/);
+  if (m) return { amount: parseFloat(m[1].replace(",", ".")), unit: null, name: m[2].trim(), kind: "bare" };
+
+  return null;
+}
+
+function formatShoppingAmount(n) {
+  const rounded = Math.round(n * 100) / 100;
+  return Number.isInteger(rounded) ? String(rounded) : String(rounded).replace(".", ",");
+}
+
+/* Collapses items that share a base name into one row. When every item in
+   the group has a summable leading quantity (same kind + unit — not
+   tablespoons/teaspoons), the amounts are added together, e.g. "30g de
+   parmesão ralado" + "150g de parmesão ralado" -> "180g de parmesão
+   ralado". Otherwise falls back to "xN" on the shortest label. Keeps every
+   underlying item's key so checking the merged row updates all of them. */
 function mergeShoppingDuplicates(items) {
   const groups = new Map();
   items.forEach((it) => {
@@ -181,12 +216,23 @@ function mergeShoppingDuplicates(items) {
     groups.get(base).push(it);
   });
   return [...groups.values()].map((group) => {
+    const keys = group.map((g) => g.key);
+    const section = group[0].section;
+    if (group.length === 1) return { keys, text: group[0].text, section };
+
+    const parsed = group.map((it) => parseShoppingQuantity(it.text));
+    const summable = parsed.every((p) => p && p.kind === parsed[0].kind && p.unit === parsed[0].unit);
+    if (summable) {
+      const sum = formatShoppingAmount(parsed.reduce((acc, p) => acc + p.amount, 0));
+      const { kind, unit, name } = parsed[0];
+      const text = kind === "metric" ? `${sum}${unit} de ${name}`
+        : kind === "noun" ? `${sum} ${unit}s de ${name}`
+        : `${sum} ${name}`;
+      return { keys, text, section };
+    }
+
     const shortest = group.reduce((a, b) => (b.text.length < a.text.length ? b : a));
-    return {
-      keys: group.map((g) => g.key),
-      text: group.length > 1 ? `${shortest.text} x${group.length}` : shortest.text,
-      section: group[0].section,
-    };
+    return { keys, text: `${shortest.text} x${group.length}`, section };
   });
 }
 
