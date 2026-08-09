@@ -445,7 +445,9 @@ function renderRecipe(catSlug, recipeSlug) {
             <div class="box">
               <div class="box-header box-header-prep">
                 Preparação
-                <button type="button" class="prep-unselect-all" aria-label="Desmarcar tudo" title="Desmarcar tudo">×</button>
+                <button type="button" class="prep-unselect-all" aria-label="Desmarcar tudo" title="Desmarcar tudo">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>
+                </button>
               </div>
               <div class="box-body">
                 ${prepChecklistHtml(cat.slug, recipe.slug, recipe.preparacao)}

@@ -554,16 +554,16 @@ body.cat-compras {
   justify-content: space-between;
 }
 .prep-unselect-all {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: none;
   background: none;
   color: var(--accent-dark);
-  font-family: var(--font-body);
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1;
   padding: 0;
   cursor: pointer;
 }
+.prep-unselect-all svg { width: 13px; height: 13px; }
 .prep-unselect-all:hover { opacity: 0.7; }
 .box-body { padding: 12px 16px 16px; }
 
