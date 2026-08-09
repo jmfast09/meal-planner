@@ -114,7 +114,7 @@ function shoppingItemKey(parts) {
 }
 
 // Pantry staples assumed always on hand — never added to the shopping list.
-const SHOPPING_LIST_EXCLUDED_WORDS = ["sal", "pimenta", "azeite"];
+const SHOPPING_LIST_EXCLUDED_WORDS = ["sal", "pimenta", "azeite", "agua"];
 function shoppingListExcluded(text) {
   const normalized = text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   return SHOPPING_LIST_EXCLUDED_WORDS.some((w) => new RegExp(`\\b${w}\\b`).test(normalized));
@@ -143,11 +143,11 @@ const SHOPPING_SECTIONS = [
 const SHOPPING_SECTION_ORDER = [
   "Panificação e confeitaria",
   "Frutas e legumes",
+  "Laticínios e ovos",
+  "Congelados",
   "Carnes",
   "Peixes",
-  "Laticínios e ovos",
   "Molhos e temperos",
-  "Congelados",
   "Cereais e grãos",
   "Conservas",
   "Outros",
