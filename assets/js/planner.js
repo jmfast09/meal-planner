@@ -126,9 +126,10 @@ function shoppingListExcluded(text) {
    temperos rather than under fresh Frutas e verduras "alho". */
 const SHOPPING_SECTIONS = [
   { label: "Congelados", keywords: ["congelad"] },
-  // Checked before Carnes/Peixes/Cereais so e.g. "caldo de frango" and
-  // "noz-moscada" land here rather than under chicken/nuts.
-  { label: "Molhos e temperos", keywords: ["molho", "tempero", "oregao", "noz-moscada", "noz moscada", "canela", "colorau", "paprika", "curcuma", "caril", "alho em po", "gengibre em po", "mostarda", "ketchup", "maionese", "vinagre", "caldo", "louro", "oleo"] },
+  // Checked before Carnes/Peixes/Laticínios/Cereais so e.g. "caldo de frango",
+  // "noz-moscada" and "leite de coco" land here rather than under
+  // chicken/nuts/dairy.
+  { label: "Molhos e temperos", keywords: ["molho", "tempero", "oregao", "noz-moscada", "noz moscada", "canela", "colorau", "paprika", "curcuma", "caril", "alho em po", "gengibre em po", "mostarda", "ketchup", "maionese", "vinagre", "caldo", "louro", "oleo", "mel", "concentrado", "leite de coco"] },
   { label: "Peixes", keywords: ["peixe", "atum", "bacalhau", "salm", "camar", "marisco", "mexilh", "polvo", "lula", "robalo", "dourada", "sardinha", "pescada"] },
   { label: "Carnes", keywords: ["carne", "frango", "peru", "porco", "vaca", "bovin", "borrego", "novilho", "bacon", "presunto", "fiambre", "chouric", "salpicao", "hamburguer", "almondega", "costeleta", "entrecosto", "picanha", "salsicha", "linguica", "toucinho"] },
   { label: "Laticínios", keywords: ["leite", "queijo", "iogurte", "manteiga", "natas", "creme", "ricotta", "mozarella", "mussarela", "parmesao", "ovo", "gema", "requeijao", "mascarpone", "feta", "flamengo"] },
@@ -196,7 +197,9 @@ function buildShoppingList(draft) {
         items.push({ key: shoppingItemKey([slug, dishName, idx++]), text: clean, source: dishName, section: classifyShoppingItem(clean) });
       });
     } else if (!shoppingListExcluded(dishName)) {
-      items.push({ key: shoppingItemKey([slug, dishName, "self"]), text: dishName, source: dishName, section: classifyShoppingItem(dishName) });
+      // Easy dishes are frozen convenience foods (no recipe page ever exists for them).
+      const section = slug === "easy" ? "Congelados" : classifyShoppingItem(dishName);
+      items.push({ key: shoppingItemKey([slug, dishName, "self"]), text: dishName, source: dishName, section });
     }
   });
 
