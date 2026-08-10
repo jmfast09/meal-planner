@@ -427,7 +427,7 @@ function renderRecipe(catSlug, recipeSlug) {
           </div>
 
           <div class="recipe-meta">
-            <span>DOSES: <span contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="doses">${escapeHtml(String(recipe.doses))}</span></span>
+            <span>DOSES: <span contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="doses">${escapeHtml(String(recipe.doses))}</span>${rawRecipe.doses ? `<button type="button" class="doses-increase-btn" data-cat="${cat.slug}" data-recipe="${recipe.slug}" aria-label="Aumentar doses" title="Aumentar doses"><svg viewBox="0 0 16 14" width="12" height="11"><path d="M8 0L16 14H0Z" fill="currentColor"/></svg></button>` : ""}</span>
             <span>TEMPO DE PREP: <span contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="tempo">${escapeHtml(recipe.tempo)}</span>${tempoFlag}</span>
           </div>
 
@@ -717,6 +717,7 @@ function router() {
     const recipe = findRecipe(parts[1], parts[2]);
     if (recipe) bindRecipeHistory(getEffectiveRecipe(parts[1], recipe));
     bindRecipeDelete();
+    bindDosesIncrease();
   }
 }
 
@@ -728,6 +729,33 @@ function bindRecipeDelete() {
     if (!confirm("Apagar esta receita? Esta ação não pode ser desfeita.")) return;
     saveRecipeEdit(cat, recipe, "hidden", "1");
     location.hash = `#/cat/${cat}`;
+  });
+}
+
+// Bumps doses by 1 and rescales every ingredient — always computed fresh
+// from the recipe's standard (shipped/as-created) doses and ingredient
+// text, not from whatever the last click already changed.
+function bindDosesIncrease() {
+  const btn = document.querySelector(".doses-increase-btn");
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    const { cat, recipe: recipeSlug } = btn.dataset;
+    const rawRecipe = findRecipe(cat, recipeSlug);
+    if (!rawRecipe || !rawRecipe.doses) return;
+    const standardDoses = rawRecipe.doses;
+    const currentDoses = parseInt(getEffectiveRecipe(cat, rawRecipe).doses, 10);
+    const newDoses = (Number.isNaN(currentDoses) ? standardDoses : currentDoses) + 1;
+
+    saveRecipeEdit(cat, recipeSlug, "doses", String(newDoses));
+    (rawRecipe.ingredients || []).forEach((ing, i) => {
+      saveRecipeEdit(cat, recipeSlug, `ingredient${i}`, scaleRecipeIngredientText(ing, standardDoses, newDoses, recipeSlug));
+    });
+    if (rawRecipe.ingredientsExtra) {
+      rawRecipe.ingredientsExtra.items.forEach((ing, i) => {
+        saveRecipeEdit(cat, recipeSlug, `ingredientExtra${i}`, scaleRecipeIngredientText(ing, standardDoses, newDoses, recipeSlug));
+      });
+    }
+    router();
   });
 }
 

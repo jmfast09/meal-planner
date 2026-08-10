@@ -128,6 +128,183 @@ function getEffectiveRecipe(catSlug, recipe) {
   return eff;
 }
 
+/* ---------- Doses scaling ----------
+   Recalculates ingredient quantities when the "doses" up-arrow bumps the
+   serving count by 1. Always computed from the recipe's *standard* (shipped
+   or as-created) doses and ingredient text, never from a previous scaling —
+   this avoids compounding rounding errors across repeated clicks. */
+
+const DOSES_MEAT_RED_KEYWORDS = ["carne", "vaca", "porco", "borrego", "novilho", "bovino", "bacon"];
+const DOSES_MEAT_WHITE_KEYWORDS = ["frango", "peru"];
+// Ground/mixed-meat sauces where a whole extra 150g cut doesn't make sense.
+const DOSES_LOW_MEAT_SLUGS = ["bolonhesa", "lasanha"];
+
+// Things that don't scale with serving size — only doubles/triples/etc. once
+// doses reach a whole multiple of the recipe's standard doses.
+const DOSES_EXCLUDED_KEYWORDS = [
+  "folha de massa", "folhas de massa",
+  "vinho tinto",
+  "farinha",
+  "leite", // covers "leite de coco" too
+  "manteiga",
+  "agua",
+  "molho",
+  "tempero", "oregao", "noz-moscada", "noz moscada", "canela", "colorau", "paprika",
+  "curcuma", "caril", "alho em po", "gengibre em po", "mostarda", "ketchup", "maionese",
+  "vinagre", "louro", "oleo",
+  "dente de alho", "dentes de alho",
+  "natas", "creme",
+  "caldo",
+];
+
+function normalizeForDoseMatch(text) {
+  return text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+}
+
+function doseIngredientExcluded(text) {
+  const n = normalizeForDoseMatch(text);
+  return DOSES_EXCLUDED_KEYWORDS.some((k) => n.includes(k));
+}
+
+function doseIngredientMeatKind(text) {
+  const n = normalizeForDoseMatch(text);
+  if (DOSES_MEAT_RED_KEYWORDS.some((k) => n.includes(k))) return "red";
+  if (DOSES_MEAT_WHITE_KEYWORDS.some((k) => n.includes(k))) return "white";
+  return null;
+}
+
+const DOSE_NUM = "(\\d+\\/\\d+|\\d+(?:[.,]\\d+)?)";
+function parseDoseNum(raw) {
+  if (raw.includes("/")) {
+    const [n, d] = raw.split("/").map(Number);
+    return n / d;
+  }
+  return parseFloat(raw.replace(",", "."));
+}
+
+/* Parses a leading quantity off an ingredient line so it can be scaled:
+   spoon measures ("1 c. sopa de X"), metric (g/kg/ml/l), a counting noun
+   (dentes, folhas, embalagens, cubos, bolbos, gemas, maçarocas), or a bare
+   "N description" (e.g. "2 abacates"). Returns null for lines with no
+   leading number — nothing to scale (e.g. "Sal", "Queijo cottage"). */
+function parseDoseQuantity(text) {
+  const s = text.trim();
+
+  let m = s.match(new RegExp(`^${DOSE_NUM}\\s*(c\\.\\s*(?:de\\s*)?(?:sopa|ch[aá]))\\s+de\\s+(.+)$`, "i"));
+  if (m) return { amount: parseDoseNum(m[1]), unitLabel: m[2].trim(), rest: m[3], kind: "spoon" };
+
+  m = s.match(new RegExp(`^${DOSE_NUM}\\s*(kg|g|ml|l|litros?)\\b\\.?\\s*de\\s+(.+)$`, "i"));
+  if (m) {
+    let unit = m[2].toLowerCase();
+    if (unit.startsWith("litro")) unit = "l";
+    return { amount: parseDoseNum(m[1]), unitLabel: unit, rest: m[3], kind: "metric" };
+  }
+
+  m = s.match(new RegExp(`^${DOSE_NUM}\\s+(dentes?|folhas?|embalage(?:m|ns)|cubos?|bolbos?|gemas?|ma[cç]arocas?)\\s+de\\s+(.+)$`, "i"));
+  if (m) return { amount: parseDoseNum(m[1]), unitLabel: m[2].toLowerCase(), rest: m[3], kind: "noun" };
+
+  m = s.match(new RegExp(`^${DOSE_NUM}\\s+(.+)$`));
+  if (m) return { amount: parseDoseNum(m[1]), unitLabel: null, rest: m[2], kind: "bare" };
+
+  return null;
+}
+
+function formatDoseNumber(n) {
+  const rounded = Math.round(n * 100) / 100;
+  return Number.isInteger(rounded) ? String(rounded) : String(rounded).replace(".", ",");
+}
+
+// Rounds a scaled gram/ml amount up to a "nice" kitchen-friendly number
+// instead of leaving an odd value like 583.3.
+function roundNiceDoseAmount(v) {
+  const step = v >= 100 ? 50 : v >= 20 ? 10 : 5;
+  return Math.ceil(v / step) * step;
+}
+
+function pluralizePt(stem) {
+  return /m$/i.test(stem) ? stem.slice(0, -1) + "ns" : stem + "s";
+}
+
+// Pluralizes just the first word of a free-text description (e.g. "ovo" ->
+// "ovos", "cebola grande" -> "cebolas grande") when going from a singular
+// original amount to a plural one. Imperfect — trailing adjectives don't
+// agree — but better than leaving an obviously-wrong "2 ovo".
+function pluralizeFirstWordPt(rest) {
+  const m = rest.match(/^(\S+)(.*)$/s);
+  if (!m) return rest;
+  const [, word, remainder] = m;
+  if (/s$/i.test(word)) return rest;
+  return pluralizePt(word) + remainder;
+}
+
+function formatDoseQuantity(parsed, newAmount) {
+  const amountStr = formatDoseNumber(newAmount);
+  if (parsed.kind === "metric") return `${amountStr}${parsed.unitLabel} de ${parsed.rest}`;
+  if (parsed.kind === "spoon") return `${amountStr} ${parsed.unitLabel} de ${parsed.rest}`;
+  if (parsed.kind === "noun") {
+    const stem = parsed.unitLabel.replace(/s$/i, "");
+    const noun = newAmount === 1 ? stem : pluralizePt(stem);
+    return `${amountStr} ${noun} de ${parsed.rest}`;
+  }
+  const rest = parsed.amount === 1 && newAmount !== 1 ? pluralizeFirstWordPt(parsed.rest) : parsed.rest;
+  return `${amountStr} ${rest}`;
+}
+
+// "1 embalagem de gyosas congeladas (20 uni)" — scales the package count to
+// the nearest half-package and the annotated unit count to the nearest even
+// number, e.g. 3 -> 4 doses gives "1,5 embalagens ... (28 uni)".
+function scaleEmbalagemWithUniCount(parsed, ratio) {
+  const newPkg = Math.round(parsed.amount * ratio * 2) / 2;
+  const uniMatch = parsed.rest.match(/^(.*)\((\s*)(\d+)(\s*uni[^)]*)\)(.*)$/i);
+  if (!uniMatch) return formatDoseQuantity(parsed, newPkg);
+  const originalUni = parseInt(uniMatch[3], 10);
+  const newUni = Math.ceil((originalUni * ratio) / 2) * 2;
+  const stem = parsed.unitLabel.replace(/s$/i, "");
+  const noun = newPkg === 1 ? stem : pluralizePt(stem);
+  const rest = `${uniMatch[1]}(${newUni}${uniMatch[4]})${uniMatch[5]}`;
+  return `${formatDoseNumber(newPkg)} ${noun} de ${rest}`;
+}
+
+/* Scales one ingredient line from standardDoses to newDoses:
+   - excluded (pantry/seasoning items) only double/triple/etc. once newDoses
+     reaches a whole multiple of standardDoses, otherwise stay exactly as-is.
+   - red/white meat (in whole grams) gets +150g/+180g per extra dose beyond
+     standard (+100g for red meat in bolonhesa/lasanha-style ground-meat
+     sauces), rather than proportional scaling.
+   - everything else scales proportionally, rounded up to a whole unit (for
+     counts) or a nice kitchen amount (for grams/ml). */
+function scaleRecipeIngredientText(text, standardDoses, newDoses, recipeSlug) {
+  if (!text || !text.trim() || !standardDoses) return text;
+  const ratio = newDoses / standardDoses;
+  if (ratio <= 1) return text;
+
+  const excluded = doseIngredientExcluded(text);
+  const parsed = parseDoseQuantity(text);
+  if (!parsed) return text;
+
+  if (excluded) {
+    const multiplier = Math.max(1, Math.floor(newDoses / standardDoses));
+    if (multiplier === 1) return text;
+    return formatDoseQuantity(parsed, parsed.amount * multiplier);
+  }
+
+  const meatKind = doseIngredientMeatKind(text);
+  if (meatKind && parsed.kind === "metric" && parsed.unitLabel === "g") {
+    const extraDoses = newDoses - standardDoses;
+    const isLowMeat = DOSES_LOW_MEAT_SLUGS.some((s) => recipeSlug.includes(s));
+    const perDose = meatKind === "red" ? (isLowMeat ? 100 : 150) : 180;
+    return formatDoseQuantity(parsed, parsed.amount + extraDoses * perDose);
+  }
+
+  if (parsed.kind === "noun" && /^embalage/.test(parsed.unitLabel) && /\(\s*\d+\s*uni/i.test(parsed.rest)) {
+    return scaleEmbalagemWithUniCount(parsed, ratio);
+  }
+
+  const rawScaled = parsed.amount * ratio;
+  const newAmount = parsed.kind === "metric" ? roundNiceDoseAmount(rawScaled) : Math.ceil(rawScaled);
+  return formatDoseQuantity(parsed, newAmount);
+}
+
 /* Recipes created in-app (via the "+" button), shared across devices through
    Firestore — see firebase-sync.js, which maintains window.__newRecipesCache
    and exposes window.saveNewRecipeRemote(). Layered on top of the built-in

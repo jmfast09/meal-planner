@@ -511,6 +511,20 @@ body.cat-compras {
   gap: 8px;
 }
 
+.doses-increase-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: var(--accent-dark);
+  padding: 0;
+  margin-left: 6px;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.doses-increase-btn:hover { opacity: 0.75; }
+
 .tempo-flag {
   background: #f5e35a;
   color: #6b5c00;
