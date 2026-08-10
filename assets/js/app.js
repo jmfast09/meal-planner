@@ -747,16 +747,11 @@ function bindRecipeDelete() {
 // Bumps doses by 1 and rescales every ingredient — always computed fresh
 // from the recipe's standard (shipped/as-created) doses and ingredient
 // text, not from whatever the last click already changed.
-function applyDosesStep(cat, recipeSlug, delta) {
-  const rawRecipe = findRecipe(cat, recipeSlug);
-  if (!rawRecipe || !rawRecipe.doses) return;
+// Rescales every ingredient of rawRecipe from its standard doses to
+// newDoses and saves each — shared by the +/- stepper and by typing a new
+// number directly into the DOSES field.
+function rescaleRecipeIngredients(cat, recipeSlug, rawRecipe, newDoses) {
   const standardDoses = rawRecipe.doses;
-  const currentDoses = parseInt(getEffectiveRecipe(cat, rawRecipe).doses, 10);
-  const base = Number.isNaN(currentDoses) ? standardDoses : currentDoses;
-  const newDoses = Math.max(1, base + delta);
-  if (newDoses === base) return;
-
-  saveRecipeEdit(cat, recipeSlug, "doses", String(newDoses));
   (rawRecipe.ingredients || []).forEach((ing, i) => {
     saveRecipeEdit(cat, recipeSlug, `ingredient${i}`, scaleRecipeIngredientText(ing, standardDoses, newDoses, recipeSlug));
   });
@@ -765,6 +760,18 @@ function applyDosesStep(cat, recipeSlug, delta) {
       saveRecipeEdit(cat, recipeSlug, `ingredientExtra${i}`, scaleRecipeIngredientText(ing, standardDoses, newDoses, recipeSlug));
     });
   }
+}
+
+function applyDosesStep(cat, recipeSlug, delta) {
+  const rawRecipe = findRecipe(cat, recipeSlug);
+  if (!rawRecipe || !rawRecipe.doses) return;
+  const currentDoses = parseInt(getEffectiveRecipe(cat, rawRecipe).doses, 10);
+  const base = Number.isNaN(currentDoses) ? rawRecipe.doses : currentDoses;
+  const newDoses = Math.max(1, base + delta);
+  if (newDoses === base) return;
+
+  saveRecipeEdit(cat, recipeSlug, "doses", String(newDoses));
+  rescaleRecipeIngredients(cat, recipeSlug, rawRecipe, newDoses);
   router();
 }
 
@@ -843,6 +850,17 @@ document.addEventListener("focusout", (e) => {
   const raw = el.hasAttribute("data-singleline") ? el.textContent : el.innerText;
   const value = raw.replace(/\u00a0/g, " ").trim();
   saveRecipeEdit(cat, recipe, field, value);
+
+  // Typing a new doses number directly should rescale ingredients the same
+  // way the up/down arrows do, not just save the raw number.
+  if (field === "doses") {
+    const rawRecipe = findRecipe(cat, recipe);
+    const newDoses = parseInt(value, 10);
+    if (rawRecipe && rawRecipe.doses && !Number.isNaN(newDoses) && newDoses >= 1) {
+      rescaleRecipeIngredients(cat, recipe, rawRecipe, newDoses);
+    }
+  }
+
   router();
 });
 
