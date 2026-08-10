@@ -511,7 +511,7 @@ body.cat-compras {
   gap: 8px;
 }
 
-.doses-increase-btn {
+.doses-step-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -523,7 +523,8 @@ body.cat-compras {
   cursor: pointer;
   vertical-align: middle;
 }
-.doses-increase-btn:hover { opacity: 0.75; }
+.doses-step-btn:hover { opacity: 0.75; }
+.doses-step-btn:disabled { opacity: 0.25; cursor: default; }
 
 .tempo-flag {
   background: #f5e35a;

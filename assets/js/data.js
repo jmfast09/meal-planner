@@ -224,17 +224,31 @@ function roundNiceDoseAmount(v) {
 function pluralizePt(stem) {
   return /m$/i.test(stem) ? stem.slice(0, -1) + "ns" : stem + "s";
 }
+function singularizeWordPt(word) {
+  if (/ns$/i.test(word)) return word.slice(0, -2) + "m";
+  if (/(r|z)es$/i.test(word)) return word.slice(0, -2);
+  if (/s$/i.test(word)) return word.slice(0, -1);
+  return word;
+}
+function pluralizeWordPt(word) {
+  if (/s$/i.test(word)) return word;
+  if (/m$/i.test(word)) return word.slice(0, -1) + "ns";
+  if (/(r|z)$/i.test(word)) return word + "es";
+  return word + "s";
+}
 
-// Pluralizes just the first word of a free-text description (e.g. "ovo" ->
-// "ovos", "cebola grande" -> "cebolas grande") when going from a singular
-// original amount to a plural one. Imperfect — trailing adjectives don't
-// agree — but better than leaving an obviously-wrong "2 ovo".
-function pluralizeFirstWordPt(rest) {
-  const m = rest.match(/^(\S+)(.*)$/s);
-  if (!m) return rest;
-  const [, word, remainder] = m;
-  if (/s$/i.test(word)) return rest;
-  return pluralizePt(word) + remainder;
+// Adjusts number agreement across the head of a free-text description (the
+// noun and any immediately-following adjectives), stopping at the first
+// preposition/conjunction/comma/parenthesis so e.g. "iogurte sem lactose"
+// only pluralizes "iogurte", not "lactose". Imperfect Portuguese grammar in
+// general, but covers the plain noun+adjective phrases used here.
+function adjustPluralityPt(rest, makePlural) {
+  const stopMatch = rest.search(/[,(]|\s+(?:de|com|sem|para|e|ou)\s+/i);
+  const head = stopMatch === -1 ? rest : rest.slice(0, stopMatch);
+  const tail = stopMatch === -1 ? "" : rest.slice(stopMatch);
+  const fn = makePlural ? pluralizeWordPt : singularizeWordPt;
+  const newHead = head.split(/(\s+)/).map((tok) => (/^\s*$/.test(tok) ? tok : fn(tok))).join("");
+  return newHead + tail;
 }
 
 function formatDoseQuantity(parsed, newAmount) {
@@ -242,11 +256,13 @@ function formatDoseQuantity(parsed, newAmount) {
   if (parsed.kind === "metric") return `${amountStr}${parsed.unitLabel} de ${parsed.rest}`;
   if (parsed.kind === "spoon") return `${amountStr} ${parsed.unitLabel} de ${parsed.rest}`;
   if (parsed.kind === "noun") {
-    const stem = parsed.unitLabel.replace(/s$/i, "");
+    const stem = singularizeWordPt(parsed.unitLabel);
     const noun = newAmount === 1 ? stem : pluralizePt(stem);
     return `${amountStr} ${noun} de ${parsed.rest}`;
   }
-  const rest = parsed.amount === 1 && newAmount !== 1 ? pluralizeFirstWordPt(parsed.rest) : parsed.rest;
+  const wasPlural = parsed.amount !== 1;
+  const isPlural = newAmount !== 1;
+  const rest = wasPlural !== isPlural ? adjustPluralityPt(parsed.rest, isPlural) : parsed.rest;
   return `${amountStr} ${rest}`;
 }
 
@@ -259,24 +275,27 @@ function scaleEmbalagemWithUniCount(parsed, ratio) {
   if (!uniMatch) return formatDoseQuantity(parsed, newPkg);
   const originalUni = parseInt(uniMatch[3], 10);
   const newUni = Math.ceil((originalUni * ratio) / 2) * 2;
-  const stem = parsed.unitLabel.replace(/s$/i, "");
+  const stem = singularizeWordPt(parsed.unitLabel);
   const noun = newPkg === 1 ? stem : pluralizePt(stem);
   const rest = `${uniMatch[1]}(${newUni}${uniMatch[4]})${uniMatch[5]}`;
   return `${formatDoseNumber(newPkg)} ${noun} de ${rest}`;
 }
 
-/* Scales one ingredient line from standardDoses to newDoses:
+/* Scales one ingredient line from standardDoses to newDoses (either
+   direction — the doses stepper can go up or down, with a floor of 1):
    - excluded (pantry/seasoning items) only double/triple/etc. once newDoses
-     reaches a whole multiple of standardDoses, otherwise stay exactly as-is.
+     reaches a whole multiple of standardDoses on the way up, and never
+     shrink below the original amount on the way down.
    - red/white meat (in whole grams) gets +150g/+180g per extra dose beyond
      standard (+100g for red meat in bolonhesa/lasanha-style ground-meat
-     sauces), rather than proportional scaling.
+     sauces) when increasing — decreasing falls back to proportional
+     scaling, since the additive rule can go negative in reverse.
    - everything else scales proportionally, rounded up to a whole unit (for
      counts) or a nice kitchen amount (for grams/ml). */
 function scaleRecipeIngredientText(text, standardDoses, newDoses, recipeSlug) {
   if (!text || !text.trim() || !standardDoses) return text;
   const ratio = newDoses / standardDoses;
-  if (ratio <= 1) return text;
+  if (ratio === 1) return text;
 
   const excluded = doseIngredientExcluded(text);
   const parsed = parseDoseQuantity(text);
@@ -289,7 +308,7 @@ function scaleRecipeIngredientText(text, standardDoses, newDoses, recipeSlug) {
   }
 
   const meatKind = doseIngredientMeatKind(text);
-  if (meatKind && parsed.kind === "metric" && parsed.unitLabel === "g") {
+  if (ratio > 1 && meatKind && parsed.kind === "metric" && parsed.unitLabel === "g") {
     const extraDoses = newDoses - standardDoses;
     const isLowMeat = DOSES_LOW_MEAT_SLUGS.some((s) => recipeSlug.includes(s));
     const perDose = meatKind === "red" ? (isLowMeat ? 100 : 150) : 180;
@@ -301,7 +320,7 @@ function scaleRecipeIngredientText(text, standardDoses, newDoses, recipeSlug) {
   }
 
   const rawScaled = parsed.amount * ratio;
-  const newAmount = parsed.kind === "metric" ? roundNiceDoseAmount(rawScaled) : Math.ceil(rawScaled);
+  const newAmount = parsed.kind === "metric" ? roundNiceDoseAmount(rawScaled) : Math.max(1, Math.ceil(rawScaled));
   return formatDoseQuantity(parsed, newAmount);
 }
 

@@ -370,6 +370,18 @@ function bindRecipeHistory(recipe) {
   renderList();
 }
 
+function dosesStepperHtml(catSlug, recipeSlug, currentDoses) {
+  const disabledDown = Number.isNaN(currentDoses) || currentDoses <= 1 ? "disabled" : "";
+  return `
+    <button type="button" class="doses-step-btn doses-decrease-btn" data-cat="${catSlug}" data-recipe="${recipeSlug}" aria-label="Diminuir doses" title="Diminuir doses" ${disabledDown}>
+      <svg viewBox="0 0 16 14" width="12" height="11"><path d="M0 0H16L8 14Z" fill="currentColor"/></svg>
+    </button>
+    <button type="button" class="doses-step-btn doses-increase-btn" data-cat="${catSlug}" data-recipe="${recipeSlug}" aria-label="Aumentar doses" title="Aumentar doses">
+      <svg viewBox="0 0 16 14" width="12" height="11"><path d="M8 0L16 14H0Z" fill="currentColor"/></svg>
+    </button>
+  `;
+}
+
 function renderRecipe(catSlug, recipeSlug) {
   const cat = findCategory(catSlug);
   const rawRecipe = findRecipe(catSlug, recipeSlug);
@@ -427,7 +439,7 @@ function renderRecipe(catSlug, recipeSlug) {
           </div>
 
           <div class="recipe-meta">
-            <span>DOSES: <span contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="doses">${escapeHtml(String(recipe.doses))}</span>${rawRecipe.doses ? `<button type="button" class="doses-increase-btn" data-cat="${cat.slug}" data-recipe="${recipe.slug}" aria-label="Aumentar doses" title="Aumentar doses"><svg viewBox="0 0 16 14" width="12" height="11"><path d="M8 0L16 14H0Z" fill="currentColor"/></svg></button>` : ""}</span>
+            <span>DOSES: <span contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="doses">${escapeHtml(String(recipe.doses))}</span>${rawRecipe.doses ? dosesStepperHtml(cat.slug, recipe.slug, parseInt(recipe.doses, 10)) : ""}</span>
             <span>TEMPO DE PREP: <span contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="tempo">${escapeHtml(recipe.tempo)}</span>${tempoFlag}</span>
           </div>
 
@@ -735,28 +747,42 @@ function bindRecipeDelete() {
 // Bumps doses by 1 and rescales every ingredient — always computed fresh
 // from the recipe's standard (shipped/as-created) doses and ingredient
 // text, not from whatever the last click already changed.
-function bindDosesIncrease() {
-  const btn = document.querySelector(".doses-increase-btn");
-  if (!btn) return;
-  btn.addEventListener("click", () => {
-    const { cat, recipe: recipeSlug } = btn.dataset;
-    const rawRecipe = findRecipe(cat, recipeSlug);
-    if (!rawRecipe || !rawRecipe.doses) return;
-    const standardDoses = rawRecipe.doses;
-    const currentDoses = parseInt(getEffectiveRecipe(cat, rawRecipe).doses, 10);
-    const newDoses = (Number.isNaN(currentDoses) ? standardDoses : currentDoses) + 1;
+function applyDosesStep(cat, recipeSlug, delta) {
+  const rawRecipe = findRecipe(cat, recipeSlug);
+  if (!rawRecipe || !rawRecipe.doses) return;
+  const standardDoses = rawRecipe.doses;
+  const currentDoses = parseInt(getEffectiveRecipe(cat, rawRecipe).doses, 10);
+  const base = Number.isNaN(currentDoses) ? standardDoses : currentDoses;
+  const newDoses = Math.max(1, base + delta);
+  if (newDoses === base) return;
 
-    saveRecipeEdit(cat, recipeSlug, "doses", String(newDoses));
-    (rawRecipe.ingredients || []).forEach((ing, i) => {
-      saveRecipeEdit(cat, recipeSlug, `ingredient${i}`, scaleRecipeIngredientText(ing, standardDoses, newDoses, recipeSlug));
-    });
-    if (rawRecipe.ingredientsExtra) {
-      rawRecipe.ingredientsExtra.items.forEach((ing, i) => {
-        saveRecipeEdit(cat, recipeSlug, `ingredientExtra${i}`, scaleRecipeIngredientText(ing, standardDoses, newDoses, recipeSlug));
-      });
-    }
-    router();
+  saveRecipeEdit(cat, recipeSlug, "doses", String(newDoses));
+  (rawRecipe.ingredients || []).forEach((ing, i) => {
+    saveRecipeEdit(cat, recipeSlug, `ingredient${i}`, scaleRecipeIngredientText(ing, standardDoses, newDoses, recipeSlug));
   });
+  if (rawRecipe.ingredientsExtra) {
+    rawRecipe.ingredientsExtra.items.forEach((ing, i) => {
+      saveRecipeEdit(cat, recipeSlug, `ingredientExtra${i}`, scaleRecipeIngredientText(ing, standardDoses, newDoses, recipeSlug));
+    });
+  }
+  router();
+}
+
+function bindDosesIncrease() {
+  const incBtn = document.querySelector(".doses-increase-btn");
+  if (incBtn) {
+    incBtn.addEventListener("click", () => {
+      const { cat, recipe: recipeSlug } = incBtn.dataset;
+      applyDosesStep(cat, recipeSlug, 1);
+    });
+  }
+  const decBtn = document.querySelector(".doses-decrease-btn");
+  if (decBtn) {
+    decBtn.addEventListener("click", () => {
+      const { cat, recipe: recipeSlug } = decBtn.dataset;
+      applyDosesStep(cat, recipeSlug, -1);
+    });
+  }
 }
 
 // Delegated listener: persists checklist state across visits (per recipe step).
