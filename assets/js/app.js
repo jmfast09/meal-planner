@@ -311,7 +311,7 @@ function editToggleBtnHtml(catSlug, recipeSlug, section, editing, disabled) {
   `;
 }
 
-function ingredientLineHtml(text, field, editCtx) {
+function ingredientLineHtml(text, field, editCtx, placeholder) {
   if (!editCtx) return `<li>${escapeHtml(text)}</li>`;
   // Editing is locked while the recipe is showing a scaled (non-standard)
   // dose count (a scaled line is recomputed from the standard baseline
@@ -329,7 +329,8 @@ function ingredientLineHtml(text, field, editCtx) {
       : "Clica no lápis para editar";
     return `<li class="ingredient-locked" title="${title}">${escapeHtml(text)}</li>`;
   }
-  return `<li contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${editCtx.cat}" data-recipe="${editCtx.recipe}" data-field="${field}">${escapeHtml(text)}</li>`;
+  const placeholderAttr = placeholder ? ` data-placeholder="${escapeHtml(placeholder)}"` : "";
+  return `<li contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${editCtx.cat}" data-recipe="${editCtx.recipe}" data-field="${field}"${placeholderAttr}>${escapeHtml(text)}</li>`;
 }
 
 // addedItems are ingredients the user appended via the "+" button — stored
@@ -337,11 +338,13 @@ function ingredientLineHtml(text, field, editCtx) {
 // list under "{prefix}Added{k}" fields, so adding one never requires
 // resizing a fixed-length array. They render seamlessly at the end of the
 // same list and scale the same way as any other ingredient (see
-// rescaleAddedIngredients).
+// rescaleAddedIngredients). The placeholder makes a just-added empty line
+// visible instead of looking like nothing happened (see the "+" click
+// handler below, which also scrolls it into view).
 function ingredientListHtml(items, addedItems, editCtx) {
   const baseLis = items.map((i, idx) => ingredientLineHtml(i, editCtx && `${editCtx.prefix}${idx}`, editCtx)).join("");
   const addedLis = (addedItems || [])
-    .map((i, idx) => ingredientLineHtml(i, editCtx && `${editCtx.prefix}Added${idx}`, editCtx))
+    .map((i, idx) => ingredientLineHtml(i, editCtx && `${editCtx.prefix}Added${idx}`, editCtx, "Novo ingrediente…"))
     .join("");
   const addBtn = editCtx && !editCtx.locked
     ? `<button type="button" class="ingredient-add-btn" data-cat="${editCtx.cat}" data-recipe="${editCtx.recipe}" data-prefix="${editCtx.prefix}" aria-label="Adicionar ingrediente" title="Adicionar ingrediente">+</button>`
@@ -946,8 +949,10 @@ document.addEventListener("click", (e) => {
   });
 });
 
-// Delegated listener: appends a new empty, editable ingredient line and
-// focuses it so the user can type right away.
+// Delegated listener: appends a new empty, editable ingredient line, scrolls
+// it into view and focuses it. The scroll matters most: an empty line at
+// the bottom of a long list is easy to miss if it lands off-screen — it
+// looked like clicking "+" did nothing.
 document.addEventListener("click", (e) => {
   const btn = e.target.closest(".ingredient-add-btn");
   if (!btn) return;
@@ -955,10 +960,11 @@ document.addEventListener("click", (e) => {
   const count = getAddedIngredientCount(cat, recipe, prefix);
   saveRecipeEdit(cat, recipe, `${prefix}AddedCount`, String(count + 1));
   router();
-  requestAnimationFrame(() => {
-    const el = document.querySelector(`[data-field="${prefix}Added${count}"]`);
-    if (el) el.focus();
-  });
+  const el = document.querySelector(`[data-field="${prefix}Added${count}"]`);
+  if (el) {
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+    el.focus();
+  }
 });
 
 // Delegated listener: toggles a box between read-only and editable — every
