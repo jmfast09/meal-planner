@@ -588,6 +588,7 @@ body.cat-compras {
   font-size: 14px;
 }
 .ingredient-list li:last-child { border-bottom: none; }
+.ingredient-list li.ingredient-locked { cursor: default; }
 
 .ingredient-subtitle {
   margin: 14px 0 4px;

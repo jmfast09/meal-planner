@@ -293,12 +293,18 @@ function renderCategory(slug) {
 function ingredientListHtml(items, editCtx) {
   return `<ul class="ingredient-list">${items.map((i, idx) => {
     if (!editCtx) return `<li>${escapeHtml(i)}</li>`;
-    // Editing at standard doses corrects the baseline used for every future
-    // scale; editing at any other dose count instead pins a fixed value for
-    // just that dose count (see commitFieldEdit) — it doesn't get
-    // recomputed away on the next +/- click, unlike a plain scaled value.
-    const title = editCtx.locked ? "Esta alteração fica fixa só para esta quantidade de doses" : "";
-    return `<li contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${editCtx.cat}" data-recipe="${editCtx.recipe}" data-field="${editCtx.prefix}${idx}"${title ? ` title="${title}"` : ""}>${escapeHtml(i)}</li>`;
+    // Editing is locked while the recipe is showing a scaled (non-standard)
+    // dose count: a scaled line is recomputed from the standard baseline
+    // every time doses change, so an edit made here would look saved but
+    // then vanish on the next +/- click — confusing. Editing only sticks
+    // (see commitFieldEdit) when it corrects the standard-doses baseline.
+    // (The per-dose override plumbing in commitFieldEdit/rescaleRecipeIngredients
+    // stays wired up even though the UI can't reach it — it still needs to
+    // read back any override saved while editing was briefly unlocked.)
+    if (editCtx.locked) {
+      return `<li class="ingredient-locked" title="Volta às doses standard para editar ingredientes">${escapeHtml(i)}</li>`;
+    }
+    return `<li contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${editCtx.cat}" data-recipe="${editCtx.recipe}" data-field="${editCtx.prefix}${idx}">${escapeHtml(i)}</li>`;
   }).join("")}</ul>`;
 }
 
