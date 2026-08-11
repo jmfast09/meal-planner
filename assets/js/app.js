@@ -293,6 +293,14 @@ function renderCategory(slug) {
 function ingredientListHtml(items, editCtx) {
   return `<ul class="ingredient-list">${items.map((i, idx) => {
     if (!editCtx) return `<li>${escapeHtml(i)}</li>`;
+    // Editing is locked while the recipe is showing a scaled (non-standard)
+    // dose count: a scaled line is recomputed from the standard baseline
+    // every time doses change, so an edit made here would look saved but
+    // then vanish on the next +/- click — confusing. Editing only sticks
+    // (see commitFieldEdit) when it corrects the standard-doses baseline.
+    if (editCtx.locked) {
+      return `<li class="ingredient-locked" title="Volta às doses standard para editar ingredientes">${escapeHtml(i)}</li>`;
+    }
     return `<li contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${editCtx.cat}" data-recipe="${editCtx.recipe}" data-field="${editCtx.prefix}${idx}">${escapeHtml(i)}</li>`;
   }).join("")}</ul>`;
 }
@@ -389,6 +397,10 @@ function renderRecipe(catSlug, recipeSlug) {
   const recipe = getEffectiveRecipe(catSlug, rawRecipe);
   document.body.className = "cat-" + cat.slug;
 
+  // rawRecipe.doses can be a number (built-in recipes) or a string (recipes
+  // created in-app), so compare numerically rather than with ===.
+  const ingredientsLocked = !!rawRecipe.doses && parseInt(recipe.doses, 10) !== parseInt(rawRecipe.doses, 10);
+
   const notasHtml = recipe.notas
     ? `
       <div class="box notas-box">
@@ -401,7 +413,7 @@ function renderRecipe(catSlug, recipeSlug) {
   const extraIngredients = recipe.ingredientsExtra
     ? `
       <div class="ingredient-subtitle" contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="ingredientsExtraTitle">${escapeHtml(recipe.ingredientsExtra.title)}</div>
-      ${ingredientListHtml(recipe.ingredientsExtra.items, { cat: cat.slug, recipe: recipe.slug, prefix: "ingredientExtra" })}
+      ${ingredientListHtml(recipe.ingredientsExtra.items, { cat: cat.slug, recipe: recipe.slug, prefix: "ingredientExtra", locked: ingredientsLocked })}
     `
     : "";
 
@@ -448,7 +460,7 @@ function renderRecipe(catSlug, recipeSlug) {
               <div class="box">
                 <div class="box-header">Ingredientes</div>
                 <div class="box-body">
-                  ${ingredientListHtml(recipe.ingredients, { cat: cat.slug, recipe: recipe.slug, prefix: "ingredient" })}
+                  ${ingredientListHtml(recipe.ingredients, { cat: cat.slug, recipe: recipe.slug, prefix: "ingredient", locked: ingredientsLocked })}
                   ${extraIngredients}
                 </div>
               </div>
