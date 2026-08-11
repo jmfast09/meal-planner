@@ -140,20 +140,17 @@ const DOSES_MEAT_WHITE_KEYWORDS = ["frango", "peru"];
 const DOSES_LOW_MEAT_SLUGS = ["bolonhesa", "lasanha"];
 
 // Things that don't scale with serving size — only doubles/triples/etc. once
-// doses reach a whole multiple of the recipe's standard doses.
+// doses reach a whole multiple of the recipe's standard doses. Kept narrow to
+// dry seasonings/small quantities and stock; liquids and dairy (wine,
+// butter, flour, milk, water, cream, sauces) scale proportionally like
+// everything else. "folha(s) de massa" stays here pending a still-unresolved
+// halve-below/double-above-standard rule for whole-sheet-count ingredients.
 const DOSES_EXCLUDED_KEYWORDS = [
   "folha de massa", "folhas de massa",
-  "vinho tinto",
-  "farinha",
-  "leite", // covers "leite de coco" too
-  "manteiga",
-  "agua",
-  "molho",
   "tempero", "oregao", "noz-moscada", "noz moscada", "canela", "colorau", "paprika",
   "curcuma", "caril", "alho em po", "gengibre em po", "mostarda", "ketchup", "maionese",
   "vinagre", "louro", "oleo",
   "dente de alho", "dentes de alho",
-  "natas", "creme",
   "caldo",
 ];
 
@@ -214,11 +211,13 @@ function formatDoseNumber(n) {
   return Number.isInteger(rounded) ? String(rounded) : String(rounded).replace(".", ",");
 }
 
-// Rounds a scaled gram/ml amount up to a "nice" kitchen-friendly number
-// instead of leaving an odd value like 583.3.
-function roundNiceDoseAmount(v) {
-  const step = v >= 100 ? 50 : v >= 20 ? 10 : 5;
-  return Math.ceil(v / step) * step;
+// Rounds a scaled gram amount to a "nice" kitchen-friendly number instead of
+// leaving an odd value like 583.3 — but only when it isn't already a whole
+// number of grams, so an exact result (e.g. 75g) is left untouched.
+function roundNiceGramsDoseAmount(v) {
+  const v2 = Math.round(v * 100) / 100;
+  if (Number.isInteger(v2)) return v2;
+  return Math.round(v2 / 10) * 10;
 }
 
 function pluralizePt(stem) {
@@ -256,6 +255,9 @@ function formatDoseQuantity(parsed, newAmount) {
   if (parsed.kind === "metric") {
     if (parsed.unitLabel === "g" && newAmount >= 1000) {
       return `${formatDoseNumber(newAmount / 1000)}kg de ${parsed.rest}`;
+    }
+    if (parsed.unitLabel === "ml" && newAmount >= 1000) {
+      return `${formatDoseNumber(newAmount / 1000)}l de ${parsed.rest}`;
     }
     return `${amountStr}${parsed.unitLabel} de ${parsed.rest}`;
   }
@@ -325,7 +327,15 @@ function scaleRecipeIngredientText(text, standardDoses, newDoses, recipeSlug) {
   }
 
   const rawScaled = parsed.amount * ratio;
-  const newAmount = parsed.kind === "metric" ? roundNiceDoseAmount(rawScaled) : Math.max(1, Math.ceil(rawScaled));
+  let newAmount;
+  if (parsed.kind === "metric" && parsed.unitLabel === "g") {
+    newAmount = roundNiceGramsDoseAmount(rawScaled);
+  } else if (parsed.kind === "metric") {
+    // ml/l/kg: keep the exact proportional value (no coarse rounding).
+    newAmount = rawScaled;
+  } else {
+    newAmount = Math.max(1, Math.ceil(rawScaled));
+  }
   return formatDoseQuantity(parsed, newAmount);
 }
 
