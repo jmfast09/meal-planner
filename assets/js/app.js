@@ -843,16 +843,19 @@ document.addEventListener("change", (e) => {
 
 // Delegated listeners: persist edits made directly on recipe text (name, doses,
 // tempo, ingredients, prep steps, notas) as the user types, on all recipe pages.
-document.addEventListener("focusout", (e) => {
-  const el = e.target.closest("[data-field]");
-  if (!el || !el.isContentEditable) return;
+
+// textContent for single-line fields avoids CSS text-transform (e.g. the
+// uppercase recipe title) leaking into the saved value; innerText is only
+// needed for multi-line fields (Notas) to preserve line breaks as \n.
+function readFieldValue(el) {
+  const raw = el.hasAttribute("data-singleline") ? el.textContent : el.innerText;
+  return raw.replace(/\u00a0/g, " ").trim();
+}
+
+function commitFieldEdit(el) {
   const { cat, recipe, field } = el.dataset;
   if (!cat || !recipe || !field) return;
-  // textContent for single-line fields avoids CSS text-transform (e.g. the
-  // uppercase recipe title) leaking into the saved value; innerText is only
-  // needed for multi-line fields (Notas) to preserve line breaks as \n.
-  const raw = el.hasAttribute("data-singleline") ? el.textContent : el.innerText;
-  const value = raw.replace(/\u00a0/g, " ").trim();
+  const value = readFieldValue(el);
   saveRecipeEdit(cat, recipe, field, value);
 
   // Editing an ingredient line while the recipe is showing its standard
@@ -880,9 +883,48 @@ document.addEventListener("focusout", (e) => {
       rescaleRecipeIngredients(cat, recipe, rawRecipe, newDoses);
     }
   }
+}
 
+document.addEventListener("focusout", (e) => {
+  const el = e.target.closest("[data-field]");
+  if (!el || !el.isContentEditable) return;
+  commitFieldEdit(el);
   router();
 });
+
+// Safety net for mobile: some mobile browsers don't fire focusout before a
+// refresh/app-switch tears the page down mid-edit (e.g. tapping the
+// browser's own reload button, pull-to-refresh, or the OS backgrounding/
+// discarding the tab) — the Firestore write that normally happens on
+// focusout would then never get sent, silently dropping the edit. So we
+// also save early while still typing (debounced, no re-render, so the
+// cursor/keyboard isn't disturbed) and flush immediately the moment the
+// page is about to be hidden or unloaded.
+const pendingFieldSaves = new WeakMap();
+document.addEventListener("input", (e) => {
+  const el = e.target.closest("[data-field]");
+  if (!el || !el.isContentEditable) return;
+  clearTimeout(pendingFieldSaves.get(el));
+  pendingFieldSaves.set(
+    el,
+    setTimeout(() => {
+      const { cat, recipe, field } = el.dataset;
+      if (!cat || !recipe || !field) return;
+      saveRecipeEdit(cat, recipe, field, readFieldValue(el));
+    }, 600)
+  );
+});
+
+function flushActiveFieldEdit() {
+  const el = document.activeElement;
+  if (!el || !el.matches || !el.matches("[data-field]") || !el.isContentEditable) return;
+  clearTimeout(pendingFieldSaves.get(el));
+  commitFieldEdit(el);
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") flushActiveFieldEdit();
+});
+window.addEventListener("pagehide", flushActiveFieldEdit);
 
 document.addEventListener("keydown", (e) => {
   const el = e.target.closest("[data-singleline]");
