@@ -604,7 +604,7 @@ const RECIPES = {
         "500ml de água",
         "4 c. sopa de levedura nutricional",
         "350g de massa cotevelinho",
-        "1 embalagem de mozarella ralada",
+        "150g de mozarella ralada",
         "1 c. sopa de mostarda dijon",
         "1 c. chá de curcuma",
         "1 c. chá de alho em pó",
