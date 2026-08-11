@@ -21,10 +21,22 @@ const CLOCHE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http:/
 const CAMERA_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>`;
 const TRASH_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
 const FILTER_ICON = `<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 3.5H17.5L12.1 10.2V15.8L7.9 17.5V10.2L2.5 3.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+const EDIT_ICON = `<svg viewBox="0 0 1500 1499.999933" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M 1147.523438 777.4375 C 1147.523438 764.007812 1158.421875 753.109375 1171.851562 753.109375 C 1185.28125 753.109375 1196.179688 764.007812 1196.179688 777.4375 L 1196.179688 1082.613281 C 1196.179688 1133.703125 1175.257812 1180.171875 1141.636719 1213.84375 C 1107.964844 1247.511719 1061.546875 1268.386719 1010.457031 1268.386719 L 417.085938 1268.386719 C 365.996094 1268.386719 319.527344 1247.511719 285.855469 1213.84375 C 252.1875 1180.171875 231.3125 1133.753906 231.3125 1082.613281 L 231.3125 489.242188 C 231.3125 438.152344 252.234375 391.683594 285.855469 358.0625 C 319.527344 324.394531 365.945312 303.519531 417.085938 303.519531 L 722.261719 303.519531 C 735.691406 303.519531 746.589844 314.417969 746.589844 327.847656 C 746.589844 341.277344 735.691406 352.175781 722.261719 352.175781 L 417.085938 352.175781 C 379.375 352.175781 345.121094 367.601562 320.207031 392.464844 C 295.34375 417.328125 279.921875 451.628906 279.921875 489.292969 L 279.921875 1082.664062 C 279.921875 1120.371094 295.34375 1154.628906 320.207031 1179.492188 C 345.070312 1204.355469 379.375 1219.777344 417.085938 1219.777344 L 1010.457031 1219.777344 C 1048.117188 1219.777344 1082.421875 1204.355469 1107.285156 1179.492188 C 1132.148438 1154.628906 1147.570312 1120.371094 1147.570312 1082.664062 L 1147.570312 777.488281 Z M 697.398438 910.953125 L 588.746094 802.253906 L 576.242188 923.457031 L 697.445312 910.953125 Z M 604.21875 749.023438 L 750.628906 895.429688 L 1062.859375 583.199219 L 916.449219 436.789062 Z M 950.804688 402.4375 L 1097.210938 548.847656 L 1191.070312 455.035156 C 1210.242188 435.867188 1219.777344 410.660156 1219.777344 385.457031 C 1219.777344 360.203125 1210.242188 335 1191.070312 315.878906 L 1191.121094 315.828125 L 1185.183594 309.894531 L 1183.820312 308.628906 C 1164.652344 289.457031 1139.445312 279.921875 1114.242188 279.921875 C 1088.988281 279.921875 1063.785156 289.457031 1044.664062 308.628906 L 950.804688 402.488281 Z M 552.644531 731.847656 L 899.179688 385.3125 L 899.324219 385.164062 L 1010.308594 274.226562 C 1038.96875 245.566406 1076.628906 231.261719 1114.289062 231.261719 C 1151.949219 231.261719 1189.613281 245.566406 1218.269531 274.226562 L 1219.535156 275.589844 L 1225.472656 281.527344 L 1225.519531 281.476562 C 1254.179688 310.136719 1268.484375 347.796875 1268.484375 385.457031 C 1268.484375 423.117188 1254.179688 460.777344 1225.519531 489.4375 L 767.902344 947.054688 C 763.375 951.582031 757.441406 953.964844 751.503906 954.160156 L 551.523438 974.839844 C 538.191406 976.203125 526.269531 966.519531 524.957031 953.1875 C 524.761719 951.386719 524.761719 949.585938 525.003906 947.835938 L 545.832031 746.589844 C 546.414062 740.800781 548.992188 735.738281 552.789062 731.894531 L 552.738281 731.847656 Z M 552.644531 731.847656 " fill-opacity="1" fill-rule="nonzero"/></svg>`;
+const SAVE_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>`;
 
 /* Doses-column sort toggled by the filter button, kept per category so it
    survives the full re-renders triggered by editing rows on the same page. */
 const categoryDoseSort = {};
+
+/* Ingredients/Preparação text is read-only until the pencil button in that
+   box's header is clicked; the same button then shows a save icon and
+   clicking it again just returns to read-only (every field already saves
+   itself on blur, same as before — this only toggles whether the text can
+   be touched at all). Kept in memory per recipe+section, not persisted. */
+const recipeSectionEditMode = {};
+function isSectionEditable(catSlug, recipeSlug, section) {
+  return !!recipeSectionEditMode[`${catSlug}|${recipeSlug}|${section}`];
+}
 
 function recipeIconUploadHtml() {
   return `
@@ -290,18 +302,32 @@ function renderCategory(slug) {
   `;
 }
 
+function editToggleBtnHtml(catSlug, recipeSlug, section, editing, disabled) {
+  const title = disabled ? "Volta às doses standard para editar" : editing ? "Guardar" : "Editar";
+  return `
+    <button type="button" class="box-edit-btn${editing ? " box-edit-btn-active" : ""}" data-cat="${catSlug}" data-recipe="${recipeSlug}" data-section="${section}" aria-label="${title}" title="${title}"${disabled ? " disabled" : ""}>
+      ${editing ? SAVE_ICON : EDIT_ICON}
+    </button>
+  `;
+}
+
 function ingredientLineHtml(text, field, editCtx) {
   if (!editCtx) return `<li>${escapeHtml(text)}</li>`;
   // Editing is locked while the recipe is showing a scaled (non-standard)
-  // dose count: a scaled line is recomputed from the standard baseline
+  // dose count (a scaled line is recomputed from the standard baseline
   // every time doses change, so an edit made here would look saved but
-  // then vanish on the next +/- click — confusing. Editing only sticks
-  // (see commitFieldEdit) when it corrects the standard-doses baseline.
-  // (The per-dose override plumbing in commitFieldEdit/rescaleRecipeIngredients
-  // stays wired up even though the UI can't reach it — it still needs to
-  // read back any override saved while editing was briefly unlocked.)
+  // then vanish on the next +/- click — confusing) or while the box isn't
+  // in edit mode (see the pencil/save button in the box header). Editing
+  // only sticks (see commitFieldEdit) when it corrects the standard-doses
+  // baseline. (The per-dose override plumbing in
+  // commitFieldEdit/rescaleRecipeIngredients stays wired up even though the
+  // UI can't reach it — it still needs to read back any override saved
+  // while editing was briefly unlocked.)
   if (editCtx.locked) {
-    return `<li class="ingredient-locked" title="Volta às doses standard para editar ingredientes">${escapeHtml(text)}</li>`;
+    const title = editCtx.lockedReason === "doses"
+      ? "Volta às doses standard para editar ingredientes"
+      : "Clica no lápis para editar";
+    return `<li class="ingredient-locked" title="${title}">${escapeHtml(text)}</li>`;
   }
   return `<li contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${editCtx.cat}" data-recipe="${editCtx.recipe}" data-field="${field}">${escapeHtml(text)}</li>`;
 }
@@ -323,10 +349,15 @@ function ingredientListHtml(items, addedItems, editCtx) {
   return `<ul class="ingredient-list">${baseLis}${addedLis}</ul>${addBtn}`;
 }
 
-function prepChecklistHtml(catSlug, recipeSlug, steps) {
+function prepChecklistHtml(catSlug, recipeSlug, steps, editable) {
   const items = steps.map((step, i) => {
     const key = prepStorageKey(catSlug, recipeSlug, i);
     const checked = localStorage.getItem(key) === "1" ? "checked" : "";
+    // The checklist itself (checkboxes) always works regardless of edit
+    // mode — only the step text is gated behind the pencil/save button.
+    const textHtml = editable
+      ? `<span class="prep-step-text" contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${catSlug}" data-recipe="${recipeSlug}" data-field="prep${i}">${escapeHtml(step)}</span>`
+      : `<span class="prep-step-text">${escapeHtml(step)}</span>`;
     return `
       <li>
         <div class="prep-step">
@@ -334,12 +365,17 @@ function prepChecklistHtml(catSlug, recipeSlug, steps) {
             <input type="checkbox" data-prep-key="${key}" ${checked} />
             <span class="prep-step-num">${i + 1}.</span>
           </label>
-          <span class="prep-step-text" contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${catSlug}" data-recipe="${recipeSlug}" data-field="prep${i}">${escapeHtml(step)}</span>
+          ${textHtml}
         </div>
       </li>
     `;
   }).join("");
-  return `<ul class="prep-list">${items}</ul>`;
+  const unselectBtn = `
+    <button type="button" class="prep-unselect-all" aria-label="Desmarcar tudo" title="Desmarcar tudo">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>
+    </button>
+  `;
+  return `<ul class="prep-list">${items}</ul>${unselectBtn}`;
 }
 
 function prepStorageKey(catSlug, recipeSlug, stepIndex) {
@@ -419,6 +455,13 @@ function renderRecipe(catSlug, recipeSlug) {
   // created in-app), so compare numerically rather than with ===.
   const atNonStandardDoses = !!rawRecipe.doses && parseInt(recipe.doses, 10) !== parseInt(rawRecipe.doses, 10);
 
+  const ingredientsEditing = isSectionEditable(cat.slug, recipe.slug, "ingredients");
+  const ingredientsEditCtx = {
+    locked: atNonStandardDoses || !ingredientsEditing,
+    lockedReason: atNonStandardDoses ? "doses" : "not-editing",
+  };
+  const prepEditing = isSectionEditable(cat.slug, recipe.slug, "preparacao");
+
   const addedIngredients = getAddedIngredients(cat.slug, recipe.slug, "ingredient");
   const addedExtraIngredients = getAddedIngredients(cat.slug, recipe.slug, "ingredientExtra");
 
@@ -433,8 +476,8 @@ function renderRecipe(catSlug, recipeSlug) {
 
   const extraIngredients = recipe.ingredientsExtra
     ? `
-      <div class="ingredient-subtitle" contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="ingredientsExtraTitle">${escapeHtml(recipe.ingredientsExtra.title)}</div>
-      ${ingredientListHtml(recipe.ingredientsExtra.items, addedExtraIngredients, { cat: cat.slug, recipe: recipe.slug, prefix: "ingredientExtra", locked: atNonStandardDoses })}
+      <div class="ingredient-subtitle"${ingredientsEditCtx.locked ? "" : ` contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="ingredientsExtraTitle"`}>${escapeHtml(recipe.ingredientsExtra.title)}</div>
+      ${ingredientListHtml(recipe.ingredientsExtra.items, addedExtraIngredients, { ...ingredientsEditCtx, cat: cat.slug, recipe: recipe.slug, prefix: "ingredientExtra" })}
     `
     : "";
 
@@ -479,23 +522,24 @@ function renderRecipe(catSlug, recipeSlug) {
           <div class="recipe-grid">
             <div>
               <div class="box">
-                <div class="box-header">Ingredientes</div>
+                <div class="box-header box-header-actions">
+                  Ingredientes
+                  ${editToggleBtnHtml(cat.slug, recipe.slug, "ingredients", ingredientsEditing, atNonStandardDoses)}
+                </div>
                 <div class="box-body">
-                  ${ingredientListHtml(recipe.ingredients, addedIngredients, { cat: cat.slug, recipe: recipe.slug, prefix: "ingredient", locked: atNonStandardDoses })}
+                  ${ingredientListHtml(recipe.ingredients, addedIngredients, { ...ingredientsEditCtx, cat: cat.slug, recipe: recipe.slug, prefix: "ingredient" })}
                   ${extraIngredients}
                 </div>
               </div>
               ${notasHtml}
             </div>
             <div class="box">
-              <div class="box-header box-header-prep">
+              <div class="box-header box-header-actions">
                 Preparação
-                <button type="button" class="prep-unselect-all" aria-label="Desmarcar tudo" title="Desmarcar tudo">
-                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>
-                </button>
+                ${editToggleBtnHtml(cat.slug, recipe.slug, "preparacao", prepEditing, false)}
               </div>
               <div class="box-body">
-                ${prepChecklistHtml(cat.slug, recipe.slug, recipe.preparacao)}
+                ${prepChecklistHtml(cat.slug, recipe.slug, recipe.preparacao, prepEditing)}
               </div>
             </div>
           </div>
@@ -915,6 +959,18 @@ document.addEventListener("click", (e) => {
     const el = document.querySelector(`[data-field="${prefix}Added${count}"]`);
     if (el) el.focus();
   });
+});
+
+// Delegated listener: toggles a box between read-only and editable — every
+// field still saves itself on blur exactly as before, this only decides
+// whether the text can be touched at all.
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".box-edit-btn");
+  if (!btn || btn.disabled) return;
+  const { cat, recipe, section } = btn.dataset;
+  const key = `${cat}|${recipe}|${section}`;
+  recipeSectionEditMode[key] = !recipeSectionEditMode[key];
+  router();
 });
 
 // Delegated listener: uploaded icon on the new-recipe editor — resize/compress

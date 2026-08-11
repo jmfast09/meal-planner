@@ -563,7 +563,7 @@ body.cat-compras {
   padding: 9px 14px;
   border-bottom: 1.5px solid var(--ink);
 }
-.box-header-prep {
+.box-header-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -572,6 +572,9 @@ body.cat-compras {
   display: flex;
   align-items: center;
   justify-content: center;
+  margin: 8px 0 0 auto;
+  width: 26px;
+  height: 26px;
   border: none;
   background: none;
   color: var(--accent-dark);
@@ -581,6 +584,30 @@ body.cat-compras {
 .prep-unselect-all svg { width: 13px; height: 13px; }
 .prep-unselect-all:hover { opacity: 0.7; }
 .box-body { padding: 12px 16px 16px; }
+
+.box-edit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: 1.3px solid var(--accent-dark);
+  background: none;
+  color: var(--accent-dark);
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.box-edit-btn svg { width: 14px; height: 14px; }
+.box-edit-btn:hover { opacity: 0.75; }
+.box-edit-btn:disabled { opacity: 0.3; cursor: default; }
+.box-edit-btn-active {
+  border-radius: 50%;
+  border: none;
+  background: var(--accent-dark);
+  color: #fff;
+}
 
 .ingredient-list li {
   padding: 6px 0;
