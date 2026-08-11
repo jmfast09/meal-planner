@@ -253,7 +253,12 @@ function adjustPluralityPt(rest, makePlural) {
 
 function formatDoseQuantity(parsed, newAmount) {
   const amountStr = formatDoseNumber(newAmount);
-  if (parsed.kind === "metric") return `${amountStr}${parsed.unitLabel} de ${parsed.rest}`;
+  if (parsed.kind === "metric") {
+    if (parsed.unitLabel === "g" && newAmount >= 1000) {
+      return `${formatDoseNumber(newAmount / 1000)}kg de ${parsed.rest}`;
+    }
+    return `${amountStr}${parsed.unitLabel} de ${parsed.rest}`;
+  }
   if (parsed.kind === "spoon") return `${amountStr} ${parsed.unitLabel} de ${parsed.rest}`;
   if (parsed.kind === "noun") {
     const stem = singularizeWordPt(parsed.unitLabel);
