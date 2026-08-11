@@ -867,8 +867,12 @@ function commitFieldEdit(el) {
   if (ingredientMatch) {
     const rawRecipe = findRecipe(cat, recipe);
     if (rawRecipe && rawRecipe.doses) {
+      // rawRecipe.doses is a number for built-in recipes but a string for
+      // ones created in-app (the new-recipe form saves raw textContent), so
+      // compare numerically rather than with === to avoid a 4 !== "4" miss.
       const currentDoses = parseInt(getEffectiveRecipe(cat, rawRecipe).doses, 10);
-      if (currentDoses === rawRecipe.doses) {
+      const standardDoses = parseInt(rawRecipe.doses, 10);
+      if (currentDoses === standardDoses) {
         saveRecipeEdit(cat, recipe, `${ingredientMatch[1]}Standard${ingredientMatch[2]}`, value);
       }
     }
