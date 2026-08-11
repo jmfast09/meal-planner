@@ -589,25 +589,24 @@ body.cat-compras {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
-  border: 1.3px solid var(--accent-dark);
+  width: 24px;
+  height: 24px;
+  border: none;
   background: none;
   color: var(--accent-dark);
   padding: 0;
   cursor: pointer;
   flex-shrink: 0;
 }
-.box-edit-btn svg { width: 14px; height: 14px; }
+.box-edit-btn svg { width: 24px; height: 24px; }
 .box-edit-btn:hover { opacity: 0.75; }
 .box-edit-btn:disabled { opacity: 0.3; cursor: default; }
 .box-edit-btn-active {
   border-radius: 50%;
-  border: none;
   background: var(--accent-dark);
   color: #fff;
 }
+.box-edit-btn-active svg { width: 14px; height: 14px; }
 
 .ingredient-list li {
   padding: 6px 0;
