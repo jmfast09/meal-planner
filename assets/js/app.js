@@ -290,22 +290,37 @@ function renderCategory(slug) {
   `;
 }
 
-function ingredientListHtml(items, editCtx) {
-  return `<ul class="ingredient-list">${items.map((i, idx) => {
-    if (!editCtx) return `<li>${escapeHtml(i)}</li>`;
-    // Editing is locked while the recipe is showing a scaled (non-standard)
-    // dose count: a scaled line is recomputed from the standard baseline
-    // every time doses change, so an edit made here would look saved but
-    // then vanish on the next +/- click — confusing. Editing only sticks
-    // (see commitFieldEdit) when it corrects the standard-doses baseline.
-    // (The per-dose override plumbing in commitFieldEdit/rescaleRecipeIngredients
-    // stays wired up even though the UI can't reach it — it still needs to
-    // read back any override saved while editing was briefly unlocked.)
-    if (editCtx.locked) {
-      return `<li class="ingredient-locked" title="Volta às doses standard para editar ingredientes">${escapeHtml(i)}</li>`;
-    }
-    return `<li contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${editCtx.cat}" data-recipe="${editCtx.recipe}" data-field="${editCtx.prefix}${idx}">${escapeHtml(i)}</li>`;
-  }).join("")}</ul>`;
+function ingredientLineHtml(text, field, editCtx) {
+  if (!editCtx) return `<li>${escapeHtml(text)}</li>`;
+  // Editing is locked while the recipe is showing a scaled (non-standard)
+  // dose count: a scaled line is recomputed from the standard baseline
+  // every time doses change, so an edit made here would look saved but
+  // then vanish on the next +/- click — confusing. Editing only sticks
+  // (see commitFieldEdit) when it corrects the standard-doses baseline.
+  // (The per-dose override plumbing in commitFieldEdit/rescaleRecipeIngredients
+  // stays wired up even though the UI can't reach it — it still needs to
+  // read back any override saved while editing was briefly unlocked.)
+  if (editCtx.locked) {
+    return `<li class="ingredient-locked" title="Volta às doses standard para editar ingredientes">${escapeHtml(text)}</li>`;
+  }
+  return `<li contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${editCtx.cat}" data-recipe="${editCtx.recipe}" data-field="${field}">${escapeHtml(text)}</li>`;
+}
+
+// addedItems are ingredients the user appended via the "+" button — stored
+// separately from the recipe's own (shipped or Firestore-created) ingredient
+// list under "{prefix}Added{k}" fields, so adding one never requires
+// resizing a fixed-length array. They render seamlessly at the end of the
+// same list and scale the same way as any other ingredient (see
+// rescaleAddedIngredients).
+function ingredientListHtml(items, addedItems, editCtx) {
+  const baseLis = items.map((i, idx) => ingredientLineHtml(i, editCtx && `${editCtx.prefix}${idx}`, editCtx)).join("");
+  const addedLis = (addedItems || [])
+    .map((i, idx) => ingredientLineHtml(i, editCtx && `${editCtx.prefix}Added${idx}`, editCtx))
+    .join("");
+  const addBtn = editCtx && !editCtx.locked
+    ? `<button type="button" class="ingredient-add-btn" data-cat="${editCtx.cat}" data-recipe="${editCtx.recipe}" data-prefix="${editCtx.prefix}" aria-label="Adicionar ingrediente" title="Adicionar ingrediente">+</button>`
+    : "";
+  return `<ul class="ingredient-list">${baseLis}${addedLis}</ul>${addBtn}`;
 }
 
 function prepChecklistHtml(catSlug, recipeSlug, steps) {
@@ -404,6 +419,9 @@ function renderRecipe(catSlug, recipeSlug) {
   // created in-app), so compare numerically rather than with ===.
   const atNonStandardDoses = !!rawRecipe.doses && parseInt(recipe.doses, 10) !== parseInt(rawRecipe.doses, 10);
 
+  const addedIngredients = getAddedIngredients(cat.slug, recipe.slug, "ingredient");
+  const addedExtraIngredients = getAddedIngredients(cat.slug, recipe.slug, "ingredientExtra");
+
   const notasHtml = recipe.notas
     ? `
       <div class="box notas-box">
@@ -416,7 +434,7 @@ function renderRecipe(catSlug, recipeSlug) {
   const extraIngredients = recipe.ingredientsExtra
     ? `
       <div class="ingredient-subtitle" contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="ingredientsExtraTitle">${escapeHtml(recipe.ingredientsExtra.title)}</div>
-      ${ingredientListHtml(recipe.ingredientsExtra.items, { cat: cat.slug, recipe: recipe.slug, prefix: "ingredientExtra", locked: atNonStandardDoses })}
+      ${ingredientListHtml(recipe.ingredientsExtra.items, addedExtraIngredients, { cat: cat.slug, recipe: recipe.slug, prefix: "ingredientExtra", locked: atNonStandardDoses })}
     `
     : "";
 
@@ -463,7 +481,7 @@ function renderRecipe(catSlug, recipeSlug) {
               <div class="box">
                 <div class="box-header">Ingredientes</div>
                 <div class="box-body">
-                  ${ingredientListHtml(recipe.ingredients, { cat: cat.slug, recipe: recipe.slug, prefix: "ingredient", locked: atNonStandardDoses })}
+                  ${ingredientListHtml(recipe.ingredients, addedIngredients, { cat: cat.slug, recipe: recipe.slug, prefix: "ingredient", locked: atNonStandardDoses })}
                   ${extraIngredients}
                 </div>
               </div>
@@ -777,6 +795,29 @@ function resolveScaledIngredientText(overridesForIngredient, newDoses, standardT
   return scaleRecipeIngredientText(standardText, standardDoses, newDoses, recipeSlug);
 }
 
+// Ingredients appended via the "+" button live entirely in Firestore, as
+// "{prefix}AddedCount" (how many) plus one "{prefix}Added{k}" field per
+// line — never a fixed-length array, so adding one never needs resizing
+// anything. Works the same for built-in and in-app-created recipes.
+function getAddedIngredientCount(cat, recipeSlug, prefix) {
+  return parseInt(getRecipeEdit(cat, recipeSlug, `${prefix}AddedCount`, "0"), 10) || 0;
+}
+
+function getAddedIngredients(cat, recipeSlug, prefix) {
+  const count = getAddedIngredientCount(cat, recipeSlug, prefix);
+  const items = [];
+  for (let k = 0; k < count; k++) items.push(getRecipeEdit(cat, recipeSlug, `${prefix}Added${k}`, ""));
+  return items;
+}
+
+function rescaleAddedIngredients(cat, recipeSlug, prefix, standardDoses, newDoses) {
+  const count = getAddedIngredientCount(cat, recipeSlug, prefix);
+  for (let k = 0; k < count; k++) {
+    const standardText = getRecipeEdit(cat, recipeSlug, `${prefix}AddedStandard${k}`, "");
+    saveRecipeEdit(cat, recipeSlug, `${prefix}Added${k}`, scaleRecipeIngredientText(standardText, standardDoses, newDoses, recipeSlug));
+  }
+}
+
 function rescaleRecipeIngredients(cat, recipeSlug, rawRecipe, newDoses) {
   const standardDoses = rawRecipe.doses;
   (rawRecipe.ingredients || []).forEach((ing, i) => {
@@ -794,6 +835,7 @@ function rescaleRecipeIngredients(cat, recipeSlug, rawRecipe, newDoses) {
       : resolveScaledIngredientText(staticOverridesForIngredient, newDoses, standardText, standardDoses, recipeSlug);
     saveRecipeEdit(cat, recipeSlug, `ingredient${i}`, value);
   });
+  rescaleAddedIngredients(cat, recipeSlug, "ingredient", standardDoses, newDoses);
   if (rawRecipe.ingredientsExtra) {
     rawRecipe.ingredientsExtra.items.forEach((ing, i) => {
       const standardText = getRecipeEdit(cat, recipeSlug, `ingredientExtraStandard${i}`, ing);
@@ -804,6 +846,7 @@ function rescaleRecipeIngredients(cat, recipeSlug, rawRecipe, newDoses) {
         : resolveScaledIngredientText(staticOverridesForIngredient, newDoses, standardText, standardDoses, recipeSlug);
       saveRecipeEdit(cat, recipeSlug, `ingredientExtra${i}`, value);
     });
+    rescaleAddedIngredients(cat, recipeSlug, "ingredientExtra", standardDoses, newDoses);
   }
 }
 
@@ -856,6 +899,21 @@ document.addEventListener("click", (e) => {
   box.querySelectorAll('.prep-step input[type="checkbox"]').forEach((cb) => {
     cb.checked = false;
     if (cb.dataset.prepKey) localStorage.removeItem(cb.dataset.prepKey);
+  });
+});
+
+// Delegated listener: appends a new empty, editable ingredient line and
+// focuses it so the user can type right away.
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".ingredient-add-btn");
+  if (!btn) return;
+  const { cat, recipe, prefix } = btn.dataset;
+  const count = getAddedIngredientCount(cat, recipe, prefix);
+  saveRecipeEdit(cat, recipe, `${prefix}AddedCount`, String(count + 1));
+  router();
+  requestAnimationFrame(() => {
+    const el = document.querySelector(`[data-field="${prefix}Added${count}"]`);
+    if (el) el.focus();
   });
 });
 
@@ -922,6 +980,24 @@ function commitFieldEdit(el) {
         // just scoped to one dose count instead of becoming the new base.
         saveRecipeEdit(cat, recipe, `${ingredientMatch[1]}DoseOverride${ingredientMatch[2]}_${currentDoses}`, value);
       }
+    }
+  }
+
+  // A "+"-added ingredient can only be edited at standard doses (same lock
+  // as any other ingredient), so every edit directly corrects its baseline —
+  // no separate non-standard-dose-override case needed here.
+  const addedMatch = /^(ingredientExtra|ingredient)Added(\d+)$/.exec(field);
+  if (addedMatch) {
+    const prefix = addedMatch[1];
+    const k = parseInt(addedMatch[2], 10);
+    if (!value) {
+      // Left blank: drop it instead of leaving a permanent empty line, but
+      // only if it's the last one — removing an earlier one would shift
+      // every later index and orphan their saved fields.
+      const count = getAddedIngredientCount(cat, recipe, prefix);
+      if (k === count - 1) saveRecipeEdit(cat, recipe, `${prefix}AddedCount`, String(count - 1));
+    } else {
+      saveRecipeEdit(cat, recipe, `${prefix}AddedStandard${k}`, value);
     }
   }
 

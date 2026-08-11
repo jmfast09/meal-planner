@@ -590,6 +590,23 @@ body.cat-compras {
 .ingredient-list li:last-child { border-bottom: none; }
 .ingredient-list li.ingredient-locked { cursor: default; }
 
+.ingredient-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 8px 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: none;
+  color: var(--accent-dark);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.ingredient-add-btn:hover { opacity: 0.75; }
+
 .ingredient-subtitle {
   margin: 14px 0 4px;
   font-weight: 800;
