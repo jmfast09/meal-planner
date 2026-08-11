@@ -134,7 +134,10 @@ function getEffectiveRecipe(catSlug, recipe) {
    or as-created) doses and ingredient text, never from a previous scaling —
    this avoids compounding rounding errors across repeated clicks. */
 
-const DOSES_MEAT_RED_KEYWORDS = ["carne", "vaca", "porco", "borrego", "novilho", "bovino", "bacon"];
+// "bacon" intentionally excluded: it's a garnish-quantity ingredient in
+// Carbonara (the only recipe that uses it), not a main protein cut, and
+// scales proportionally rather than by the flat +150g/extra-dose rule below.
+const DOSES_MEAT_RED_KEYWORDS = ["carne", "vaca", "porco", "borrego", "novilho", "bovino"];
 const DOSES_MEAT_WHITE_KEYWORDS = ["frango", "peru"];
 // Ground/mixed-meat sauces where a whole extra 150g cut doesn't make sense.
 const DOSES_LOW_MEAT_SLUGS = ["bolonhesa", "lasanha"];
@@ -273,9 +276,12 @@ function formatDoseQuantity(parsed, newAmount) {
   return `${amountStr} ${rest}`;
 }
 
-// "1 embalagem de gyosas congeladas (20 uni)" — scales the package count to
-// the nearest half-package and the annotated unit count to the nearest even
-// number, e.g. 3 -> 4 doses gives "1,5 embalagens ... (28 uni)".
+// Handles ingredients still phrased as "N embalagens de X (Y uni)" — scales
+// the package count to the nearest half-package and the annotated unit count
+// to the nearest even number. Prefer writing new ingredients with their real
+// weight/count instead (e.g. "300g de bacon em cubos") so they scale via
+// plain proportional math with no special-casing; this stays only as a
+// fallback for recipes already written the old way.
 function scaleEmbalagemWithUniCount(parsed, ratio) {
   const newPkg = Math.round(parsed.amount * ratio * 2) / 2;
   const uniMatch = parsed.rest.match(/^(.*)\((\s*)(\d+)(\s*uni[^)]*)\)(.*)$/i);
@@ -407,7 +413,7 @@ const RECIPES = {
       doses: 3,
       tempo: "40 min",
       ingredients: [
-        "1 embalagem de gyosas congeladas (20 uni)",
+        "24 gyosas congeladas",
         "2 dentes de alho",
         "1 c. sopa de gengibre em pó",
         "1 c. sopa de caril em pó",
@@ -541,7 +547,7 @@ const RECIPES = {
       tempo: "30 min",
       ingredients: [
         "400g de esparguete",
-        "2 embalagens de bacon em cubos (300g)",
+        "300g de bacon em cubos",
         "1 ovo inteiro",
         "2 gemas de ovo",
         "150g de parmesão ralado",
