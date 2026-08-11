@@ -762,18 +762,34 @@ function bindRecipeDelete() {
 // Rescales every ingredient of rawRecipe from its standard doses to
 // newDoses and saves each — shared by the +/- stepper and by typing a new
 // number directly into the DOSES field.
+// A recipe's doseOverrides/ingredientsExtraDoseOverrides ({ [ingredientIndex]:
+// { [doseCount]: exactText } }) pin an ingredient's text at specific dose
+// counts where the general scaling rules don't match reality (e.g. a
+// packaging step, or a deliberate one-off exception) — checked before
+// falling back to the formula. Never needed at standard doses, since that
+// value always comes from the shipped/edited text directly.
+function resolveScaledIngredientText(overridesForIngredient, newDoses, standardText, standardDoses, recipeSlug) {
+  const override = overridesForIngredient && overridesForIngredient[newDoses];
+  if (override !== undefined) return override;
+  return scaleRecipeIngredientText(standardText, standardDoses, newDoses, recipeSlug);
+}
+
 function rescaleRecipeIngredients(cat, recipeSlug, rawRecipe, newDoses) {
   const standardDoses = rawRecipe.doses;
   (rawRecipe.ingredients || []).forEach((ing, i) => {
     // A manual correction saved while viewing standard doses (see the
     // focusout handler below) replaces the shipped text as the baseline.
     const standardText = getRecipeEdit(cat, recipeSlug, `ingredientStandard${i}`, ing);
-    saveRecipeEdit(cat, recipeSlug, `ingredient${i}`, scaleRecipeIngredientText(standardText, standardDoses, newDoses, recipeSlug));
+    const overridesForIngredient = rawRecipe.doseOverrides && rawRecipe.doseOverrides[i];
+    const value = resolveScaledIngredientText(overridesForIngredient, newDoses, standardText, standardDoses, recipeSlug);
+    saveRecipeEdit(cat, recipeSlug, `ingredient${i}`, value);
   });
   if (rawRecipe.ingredientsExtra) {
     rawRecipe.ingredientsExtra.items.forEach((ing, i) => {
       const standardText = getRecipeEdit(cat, recipeSlug, `ingredientExtraStandard${i}`, ing);
-      saveRecipeEdit(cat, recipeSlug, `ingredientExtra${i}`, scaleRecipeIngredientText(standardText, standardDoses, newDoses, recipeSlug));
+      const overridesForIngredient = rawRecipe.ingredientsExtraDoseOverrides && rawRecipe.ingredientsExtraDoseOverrides[i];
+      const value = resolveScaledIngredientText(overridesForIngredient, newDoses, standardText, standardDoses, recipeSlug);
+      saveRecipeEdit(cat, recipeSlug, `ingredientExtra${i}`, value);
     });
   }
 }

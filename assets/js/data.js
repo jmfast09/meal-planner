@@ -454,6 +454,18 @@ const RECIPES = {
         "Mozarella fresca",
         "Salada para acompanhar",
       ],
+      // Manual per-dose corrections that don't reduce to the general scaling
+      // formulas — see index 2 (cebola) and 3 (folhas de louro) below.
+      doseOverrides: {
+        2: { 1: "Meia cebola", 2: "1 cebola", 3: "1 cebola" },
+        3: {
+          1: "1 folha de louro",
+          2: "1 folha de louro",
+          3: "2 folhas de louro",
+          4: "2 folhas de louro",
+          5: "2 folhas de louro",
+        },
+      },
       ingredientsExtra: {
         title: "Béchamel",
         items: [
@@ -483,7 +495,7 @@ const RECIPES = {
       doses: 6,
       tempo: "1h",
       ingredients: [
-        "6 folhas de massa",
+        "12 folhas de massa",
         "1 cebola grande",
         "1 dente de alho",
         "250g de espinafres congelados",
@@ -495,6 +507,16 @@ const RECIPES = {
         "Mozarella fresca",
         "Salada para acompanhar",
       ],
+      doseOverrides: {
+        0: {
+          1: "3 folhas de massa",
+          2: "3 folhas de massa",
+          3: "6 folhas de massa",
+          4: "6 folhas de massa",
+          5: "6 folhas de massa",
+        },
+        1: { 1: "Meia cebola", 2: "1 cebola", 3: "1 cebola" },
+      },
       preparacao: [
         "Pré-aquecer o forno a 180ºC.",
         "Aquecer o wok com um fio de azeite. Adicionar a cebola e o alho picados e cozinhar durante 2 a 3 minutos.",
@@ -525,6 +547,24 @@ const RECIPES = {
         "Pão ralado",
         "Salada para acompanhar",
       ],
+      doseOverrides: {
+        0: {
+          1: "1 c. de sopa de manteiga",
+          2: "1 c. de sopa de manteiga",
+          3: "2 c. de sopa de manteiga",
+          4: "2 c. de sopa de manteiga",
+          5: "2 c. de sopa de manteiga",
+          7: "3 c. de sopa de manteiga",
+          8: "3 c. de sopa de manteiga",
+        },
+        2: {
+          1: "4 batatas pequenas",
+          2: "6 batatas pequenas",
+          3: "6 batatas pequenas",
+          4: "6 batatas pequenas",
+          5: "8 batatas pequenas",
+        },
+      },
       preparacao: [
         "Untar a casserole La Creuset com manteiga. Descascar e cortar as batatas em rodelas com 5mm de espessura. Pré-aquecer o forno a 180ºC.",
         "Cobrir as batatas em água fria e cozer durante 15 min (picar com um garfo e retirar se moles).",
@@ -610,6 +650,9 @@ const RECIPES = {
         "1 c. chá de alho em pó",
         "Sal",
       ],
+      doseOverrides: {
+        1: { 7: "825ml de água", 8: "950ml de água" },
+      },
       preparacao: [
         "Pré-aquecer o forno a 180ºC.",
         "Para amolecer os cajus, cobri-los com água a ferver durante 5 minutos.",
@@ -719,13 +762,27 @@ const RECIPES = {
         "1/2 pepino pequeno",
         "2 limas",
         "2 maçarocas de milho",
-        "Queijo cottage",
+        "2 c. sopa de queijo cottage",
         "1 iogurte grego",
-        "1 iogurte sem lactose",
-        "12 batatas pequenas para assar",
+        "2 iogurtes sem lactose",
+        "800g de batatas para assar",
         "1 dente de alho",
         "Sal, paprika e alho em pó",
       ],
+      doseOverrides: {
+        1: { 1: "Meio abacate" },
+        // Cucumber deliberately doesn't scale in this recipe (user
+        // exception) — cucumber elsewhere still scales proportionally.
+        3: {
+          1: "1/2 pepino pequeno",
+          2: "1/2 pepino pequeno",
+          3: "1/2 pepino pequeno",
+          5: "1/2 pepino pequeno",
+          6: "1/2 pepino pequeno",
+          7: "1/2 pepino pequeno",
+          8: "1/2 pepino pequeno",
+        },
+      },
       preparacao: [
         "Temperar o frango com sal, pimenta, paprika, alho em pó e lima. Deixar a marinar.",
         "Descascar as batatas e cortá-las em cubos pequenos.",
