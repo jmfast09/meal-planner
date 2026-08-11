@@ -293,15 +293,12 @@ function renderCategory(slug) {
 function ingredientListHtml(items, editCtx) {
   return `<ul class="ingredient-list">${items.map((i, idx) => {
     if (!editCtx) return `<li>${escapeHtml(i)}</li>`;
-    // Editing is locked while the recipe is showing a scaled (non-standard)
-    // dose count: a scaled line is recomputed from the standard baseline
-    // every time doses change, so an edit made here would look saved but
-    // then vanish on the next +/- click — confusing. Editing only sticks
-    // (see commitFieldEdit) when it corrects the standard-doses baseline.
-    if (editCtx.locked) {
-      return `<li class="ingredient-locked" title="Volta às doses standard para editar ingredientes">${escapeHtml(i)}</li>`;
-    }
-    return `<li contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${editCtx.cat}" data-recipe="${editCtx.recipe}" data-field="${editCtx.prefix}${idx}">${escapeHtml(i)}</li>`;
+    // Editing at standard doses corrects the baseline used for every future
+    // scale; editing at any other dose count instead pins a fixed value for
+    // just that dose count (see commitFieldEdit) — it doesn't get
+    // recomputed away on the next +/- click, unlike a plain scaled value.
+    const title = editCtx.locked ? "Esta alteração fica fixa só para esta quantidade de doses" : "";
+    return `<li contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${editCtx.cat}" data-recipe="${editCtx.recipe}" data-field="${editCtx.prefix}${idx}"${title ? ` title="${title}"` : ""}>${escapeHtml(i)}</li>`;
   }).join("")}</ul>`;
 }
 
@@ -399,7 +396,7 @@ function renderRecipe(catSlug, recipeSlug) {
 
   // rawRecipe.doses can be a number (built-in recipes) or a string (recipes
   // created in-app), so compare numerically rather than with ===.
-  const ingredientsLocked = !!rawRecipe.doses && parseInt(recipe.doses, 10) !== parseInt(rawRecipe.doses, 10);
+  const atNonStandardDoses = !!rawRecipe.doses && parseInt(recipe.doses, 10) !== parseInt(rawRecipe.doses, 10);
 
   const notasHtml = recipe.notas
     ? `
@@ -413,7 +410,7 @@ function renderRecipe(catSlug, recipeSlug) {
   const extraIngredients = recipe.ingredientsExtra
     ? `
       <div class="ingredient-subtitle" contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="ingredientsExtraTitle">${escapeHtml(recipe.ingredientsExtra.title)}</div>
-      ${ingredientListHtml(recipe.ingredientsExtra.items, { cat: cat.slug, recipe: recipe.slug, prefix: "ingredientExtra", locked: ingredientsLocked })}
+      ${ingredientListHtml(recipe.ingredientsExtra.items, { cat: cat.slug, recipe: recipe.slug, prefix: "ingredientExtra", locked: atNonStandardDoses })}
     `
     : "";
 
@@ -460,7 +457,7 @@ function renderRecipe(catSlug, recipeSlug) {
               <div class="box">
                 <div class="box-header">Ingredientes</div>
                 <div class="box-body">
-                  ${ingredientListHtml(recipe.ingredients, { cat: cat.slug, recipe: recipe.slug, prefix: "ingredient", locked: ingredientsLocked })}
+                  ${ingredientListHtml(recipe.ingredients, { cat: cat.slug, recipe: recipe.slug, prefix: "ingredient", locked: atNonStandardDoses })}
                   ${extraIngredients}
                 </div>
               </div>
@@ -780,15 +777,25 @@ function rescaleRecipeIngredients(cat, recipeSlug, rawRecipe, newDoses) {
     // A manual correction saved while viewing standard doses (see the
     // focusout handler below) replaces the shipped text as the baseline.
     const standardText = getRecipeEdit(cat, recipeSlug, `ingredientStandard${i}`, ing);
-    const overridesForIngredient = rawRecipe.doseOverrides && rawRecipe.doseOverrides[i];
-    const value = resolveScaledIngredientText(overridesForIngredient, newDoses, standardText, standardDoses, recipeSlug);
+    // A manual correction saved while viewing a non-standard dose count
+    // (a user-typed dose-specific fix, synced via Firestore so it works for
+    // any recipe including ones created in-app) wins over a built-in
+    // doseOverrides entry, which in turn wins over the plain formula.
+    const manualOverride = getRecipeEdit(cat, recipeSlug, `ingredientDoseOverride${i}_${newDoses}`, undefined);
+    const staticOverridesForIngredient = rawRecipe.doseOverrides && rawRecipe.doseOverrides[i];
+    const value = manualOverride !== undefined
+      ? manualOverride
+      : resolveScaledIngredientText(staticOverridesForIngredient, newDoses, standardText, standardDoses, recipeSlug);
     saveRecipeEdit(cat, recipeSlug, `ingredient${i}`, value);
   });
   if (rawRecipe.ingredientsExtra) {
     rawRecipe.ingredientsExtra.items.forEach((ing, i) => {
       const standardText = getRecipeEdit(cat, recipeSlug, `ingredientExtraStandard${i}`, ing);
-      const overridesForIngredient = rawRecipe.ingredientsExtraDoseOverrides && rawRecipe.ingredientsExtraDoseOverrides[i];
-      const value = resolveScaledIngredientText(overridesForIngredient, newDoses, standardText, standardDoses, recipeSlug);
+      const manualOverride = getRecipeEdit(cat, recipeSlug, `ingredientExtraDoseOverride${i}_${newDoses}`, undefined);
+      const staticOverridesForIngredient = rawRecipe.ingredientsExtraDoseOverrides && rawRecipe.ingredientsExtraDoseOverrides[i];
+      const value = manualOverride !== undefined
+        ? manualOverride
+        : resolveScaledIngredientText(staticOverridesForIngredient, newDoses, standardText, standardDoses, recipeSlug);
       saveRecipeEdit(cat, recipeSlug, `ingredientExtra${i}`, value);
     });
   }
@@ -902,6 +909,12 @@ function commitFieldEdit(el) {
       const standardDoses = parseInt(rawRecipe.doses, 10);
       if (currentDoses === standardDoses) {
         saveRecipeEdit(cat, recipe, `${ingredientMatch[1]}Standard${ingredientMatch[2]}`, value);
+      } else if (!Number.isNaN(currentDoses)) {
+        // Editing away from standard doses pins this exact text to this
+        // exact dose count, so it survives future +/- clicks instead of
+        // being recomputed away — same idea as the standard-doses baseline,
+        // just scoped to one dose count instead of becoming the new base.
+        saveRecipeEdit(cat, recipe, `${ingredientMatch[1]}DoseOverride${ingredientMatch[2]}_${currentDoses}`, value);
       }
     }
   }
