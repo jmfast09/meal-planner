@@ -753,11 +753,15 @@ function bindRecipeDelete() {
 function rescaleRecipeIngredients(cat, recipeSlug, rawRecipe, newDoses) {
   const standardDoses = rawRecipe.doses;
   (rawRecipe.ingredients || []).forEach((ing, i) => {
-    saveRecipeEdit(cat, recipeSlug, `ingredient${i}`, scaleRecipeIngredientText(ing, standardDoses, newDoses, recipeSlug));
+    // A manual correction saved while viewing standard doses (see the
+    // focusout handler below) replaces the shipped text as the baseline.
+    const standardText = getRecipeEdit(cat, recipeSlug, `ingredientStandard${i}`, ing);
+    saveRecipeEdit(cat, recipeSlug, `ingredient${i}`, scaleRecipeIngredientText(standardText, standardDoses, newDoses, recipeSlug));
   });
   if (rawRecipe.ingredientsExtra) {
     rawRecipe.ingredientsExtra.items.forEach((ing, i) => {
-      saveRecipeEdit(cat, recipeSlug, `ingredientExtra${i}`, scaleRecipeIngredientText(ing, standardDoses, newDoses, recipeSlug));
+      const standardText = getRecipeEdit(cat, recipeSlug, `ingredientExtraStandard${i}`, ing);
+      saveRecipeEdit(cat, recipeSlug, `ingredientExtra${i}`, scaleRecipeIngredientText(standardText, standardDoses, newDoses, recipeSlug));
     });
   }
 }
@@ -850,6 +854,22 @@ document.addEventListener("focusout", (e) => {
   const raw = el.hasAttribute("data-singleline") ? el.textContent : el.innerText;
   const value = raw.replace(/\u00a0/g, " ").trim();
   saveRecipeEdit(cat, recipe, field, value);
+
+  // Editing an ingredient line while the recipe is showing its standard
+  // doses corrects the baseline used for future scaling, not just the
+  // currently displayed text — otherwise the next +/- click or a retyped
+  // DOSES number would overwrite the correction with the original shipped
+  // value again.
+  const ingredientMatch = /^(ingredientExtra|ingredient)(\d+)$/.exec(field);
+  if (ingredientMatch) {
+    const rawRecipe = findRecipe(cat, recipe);
+    if (rawRecipe && rawRecipe.doses) {
+      const currentDoses = parseInt(getEffectiveRecipe(cat, rawRecipe).doses, 10);
+      if (currentDoses === rawRecipe.doses) {
+        saveRecipeEdit(cat, recipe, `${ingredientMatch[1]}Standard${ingredientMatch[2]}`, value);
+      }
+    }
+  }
 
   // Typing a new doses number directly should rescale ingredients the same
   // way the up/down arrows do, not just save the raw number.
