@@ -1,4 +1,5 @@
 /* Meal Planner — app logic (vanilla JS, hash router, no build step) */
+console.log("[BUILD] app.js loaded — debug-add-v2");
 
 function findCategory(slug) {
   return CATEGORIES.find((c) => c.slug === slug);
@@ -1066,7 +1067,11 @@ function commitFieldEdit(el) {
       // was deleting a just-created row before the user had a chance to
       // type into it.)
       const count = getAddedIngredientCount(cat, recipe, prefix);
-      if (k === count - 1) saveRecipeEdit(cat, recipe, `${prefix}AddedCount`, String(count - 1));
+      if (k === count - 1) {
+        console.log("[DEBUG-ADD] deleting added row", field, "count", count, "->", count - 1);
+        console.trace("[DEBUG-ADD] delete call stack");
+        saveRecipeEdit(cat, recipe, `${prefix}AddedCount`, String(count - 1));
+      }
     } else {
       saveRecipeEdit(cat, recipe, `${prefix}AddedStandard${k}`, value);
     }
