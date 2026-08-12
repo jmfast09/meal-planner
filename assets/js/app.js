@@ -958,26 +958,17 @@ document.addEventListener("click", (e) => {
   if (!btn) return;
   const { cat, recipe, prefix } = btn.dataset;
   const count = getAddedIngredientCount(cat, recipe, prefix);
-  console.log("[DEBUG-ADD] + clicked, count read =", count);
   saveRecipeEdit(cat, recipe, `${prefix}AddedCount`, String(count + 1));
   router();
   const el = document.querySelector(`[data-field="${prefix}Added${count}"]`);
-  console.log("[DEBUG-ADD] after router(), new row found in DOM =", !!el);
   if (!el) return;
   el.scrollIntoView({ block: "center", behavior: "smooth" });
   // Deferred: clicking a <button> gives it default focus, which would
   // otherwise land AFTER our own focus() call (both happen within this same
-  // click) and immediately steal it back — that stray focus->blur on the
-  // brand new (still empty) line was tripping the "remove if left blank"
-  // cleanup in commitFieldEdit, so the line looked like it flashed and
-  // vanished. Running focus() on the next tick, once the browser's own
-  // default click handling has settled, makes it the last word.
-  setTimeout(() => {
-    const stillThere = document.querySelector(`[data-field="${prefix}Added${count}"]`);
-    console.log("[DEBUG-ADD] in deferred focus(), row still in DOM =", !!stillThere, "same element =", stillThere === el);
-    el.focus();
-    console.log("[DEBUG-ADD] after focus(), document.activeElement =", document.activeElement && document.activeElement.dataset && document.activeElement.dataset.field);
-  }, 0);
+  // click) and steal it back if it ran synchronously. Running focus() on
+  // the next tick, once the browser's own default click handling has
+  // settled, makes it the last word.
+  setTimeout(() => el.focus(), 0);
 });
 
 // Delegated listener: toggles a box between read-only and editable — every
@@ -1065,10 +1056,16 @@ function commitFieldEdit(el) {
   if (addedMatch) {
     const prefix = addedMatch[1];
     const k = parseInt(addedMatch[2], 10);
-    console.log("[DEBUG-ADD] commitFieldEdit on added field:", field, "value =", JSON.stringify(value));
     if (!value) {
+      // Left blank on a deliberate blur: drop it instead of leaving a
+      // permanent empty line, but only if it's the last one — removing an
+      // earlier one would shift every later index and orphan their saved
+      // fields. (commitFieldEdit only runs from a real focusout — see
+      // flushActiveFieldEdit below, which deliberately does NOT call this,
+      // since a defensive visibility-flap flush isn't a deliberate blur and
+      // was deleting a just-created row before the user had a chance to
+      // type into it.)
       const count = getAddedIngredientCount(cat, recipe, prefix);
-      console.log("[DEBUG-ADD] value is blank, k =", k, "count =", count, "-> will delete?", k === count - 1);
       if (k === count - 1) saveRecipeEdit(cat, recipe, `${prefix}AddedCount`, String(count - 1));
     } else {
       saveRecipeEdit(cat, recipe, `${prefix}AddedStandard${k}`, value);
@@ -1089,7 +1086,6 @@ function commitFieldEdit(el) {
 document.addEventListener("focusout", (e) => {
   const el = e.target.closest("[data-field]");
   if (!el || !el.isContentEditable) return;
-  console.log("[DEBUG-ADD] focusout fired on field:", el.dataset.field, "relatedTarget:", e.relatedTarget && (e.relatedTarget.tagName + "." + e.relatedTarget.className));
   commitFieldEdit(el);
   // Deferred, not synchronous: this same focusout also fires when the blur
   // is a side effect of mousedown on a DIFFERENT button — e.g. clicking "+"
@@ -1129,18 +1125,25 @@ document.addEventListener("input", (e) => {
 function flushActiveFieldEdit() {
   const el = document.activeElement;
   if (!el || !el.matches || !el.matches("[data-field]") || !el.isContentEditable) return;
-  console.log("[DEBUG-ADD] flushActiveFieldEdit firing on:", el.dataset.field);
   clearTimeout(pendingFieldSaves.get(el));
-  commitFieldEdit(el);
+  const { cat, recipe, field } = el.dataset;
+  if (!cat || !recipe || !field) return;
+  // A lightweight, non-destructive save only — visibilitychange fires on
+  // any occlusion/focus flap (e.g. DevTools stealing window focus toggled
+  // this dozens of times a second in testing, not just a real page
+  // teardown), so this must never run commitFieldEdit's special-case side
+  // effects. In particular the "delete this row if it's still blank"
+  // added-ingredient cleanup was firing here — the row had just been
+  // created and focused, hadn't been typed into yet, and a visibility flap
+  // a moment later flushed it as "left blank" and deleted it. Those side
+  // effects are only correct for a deliberate, final blur (the focusout
+  // listener above), not a defensive just-in-case flush.
+  saveRecipeEdit(cat, recipe, field, readFieldValue(el));
 }
 document.addEventListener("visibilitychange", () => {
-  console.log("[DEBUG-ADD] visibilitychange, state =", document.visibilityState);
   if (document.visibilityState === "hidden") flushActiveFieldEdit();
 });
-window.addEventListener("pagehide", () => {
-  console.log("[DEBUG-ADD] pagehide fired");
-  flushActiveFieldEdit();
-});
+window.addEventListener("pagehide", flushActiveFieldEdit);
 
 document.addEventListener("keydown", (e) => {
   const el = e.target.closest("[data-singleline]");
