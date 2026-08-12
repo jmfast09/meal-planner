@@ -1055,19 +1055,14 @@ function commitFieldEdit(el) {
   // as any other ingredient), so every edit directly corrects its baseline —
   // no separate non-standard-dose-override case needed here.
   const addedMatch = /^(ingredientExtra|ingredient)Added(\d+)$/.exec(field);
-  if (addedMatch) {
-    const prefix = addedMatch[1];
-    const k = parseInt(addedMatch[2], 10);
-    if (!value) {
-      // Left blank: drop it instead of leaving a permanent empty line, but
-      // only if it's the last one — removing an earlier one would shift
-      // every later index and orphan their saved fields.
-      const count = getAddedIngredientCount(cat, recipe, prefix);
-      if (k === count - 1) saveRecipeEdit(cat, recipe, `${prefix}AddedCount`, String(count - 1));
-    } else {
-      saveRecipeEdit(cat, recipe, `${prefix}AddedStandard${k}`, value);
-    }
+  if (addedMatch && value) {
+    saveRecipeEdit(cat, recipe, `${addedMatch[1]}AddedStandard${addedMatch[2]}`, value);
   }
+  // (A blank line used to auto-remove itself here, but that same "blank on
+  // blur" condition could be hit by a spurious/early blur right after the
+  // row was created — before the user had typed anything — silently
+  // deleting a line the user thought they'd just added. A leftover blank
+  // row if someone genuinely abandons one is a smaller cost than that.)
 
   // Typing a new doses number directly should rescale ingredients the same
   // way the up/down arrows do, not just save the raw number.
