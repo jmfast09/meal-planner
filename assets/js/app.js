@@ -958,9 +958,11 @@ document.addEventListener("click", (e) => {
   if (!btn) return;
   const { cat, recipe, prefix } = btn.dataset;
   const count = getAddedIngredientCount(cat, recipe, prefix);
+  console.log("[DEBUG-ADD] + clicked, count read =", count);
   saveRecipeEdit(cat, recipe, `${prefix}AddedCount`, String(count + 1));
   router();
   const el = document.querySelector(`[data-field="${prefix}Added${count}"]`);
+  console.log("[DEBUG-ADD] after router(), new row found in DOM =", !!el);
   if (!el) return;
   el.scrollIntoView({ block: "center", behavior: "smooth" });
   // Deferred: clicking a <button> gives it default focus, which would
@@ -970,7 +972,12 @@ document.addEventListener("click", (e) => {
   // cleanup in commitFieldEdit, so the line looked like it flashed and
   // vanished. Running focus() on the next tick, once the browser's own
   // default click handling has settled, makes it the last word.
-  setTimeout(() => el.focus(), 0);
+  setTimeout(() => {
+    const stillThere = document.querySelector(`[data-field="${prefix}Added${count}"]`);
+    console.log("[DEBUG-ADD] in deferred focus(), row still in DOM =", !!stillThere, "same element =", stillThere === el);
+    el.focus();
+    console.log("[DEBUG-ADD] after focus(), document.activeElement =", document.activeElement && document.activeElement.dataset && document.activeElement.dataset.field);
+  }, 0);
 });
 
 // Delegated listener: toggles a box between read-only and editable — every
@@ -1058,16 +1065,10 @@ function commitFieldEdit(el) {
   if (addedMatch) {
     const prefix = addedMatch[1];
     const k = parseInt(addedMatch[2], 10);
+    console.log("[DEBUG-ADD] commitFieldEdit on added field:", field, "value =", JSON.stringify(value));
     if (!value) {
-      // Left blank: drop it instead of leaving a permanent empty line, but
-      // only if it's the last one — removing an earlier one would shift
-      // every later index and orphan their saved fields. (This previously
-      // misfired from a spurious early blur caused by firebase-sync.js
-      // wholesale-replacing the local cache from a snapshot echo that
-      // hadn't caught up with this row's own just-issued write yet — fixed
-      // by merging snapshot data into the cache there instead. If a row
-      // still vanishes after that fix, the cause is something else.)
       const count = getAddedIngredientCount(cat, recipe, prefix);
+      console.log("[DEBUG-ADD] value is blank, k =", k, "count =", count, "-> will delete?", k === count - 1);
       if (k === count - 1) saveRecipeEdit(cat, recipe, `${prefix}AddedCount`, String(count - 1));
     } else {
       saveRecipeEdit(cat, recipe, `${prefix}AddedStandard${k}`, value);
@@ -1088,6 +1089,7 @@ function commitFieldEdit(el) {
 document.addEventListener("focusout", (e) => {
   const el = e.target.closest("[data-field]");
   if (!el || !el.isContentEditable) return;
+  console.log("[DEBUG-ADD] focusout fired on field:", el.dataset.field, "relatedTarget:", e.relatedTarget && (e.relatedTarget.tagName + "." + e.relatedTarget.className));
   commitFieldEdit(el);
   // Deferred, not synchronous: this same focusout also fires when the blur
   // is a side effect of mousedown on a DIFFERENT button — e.g. clicking "+"
@@ -1127,13 +1129,18 @@ document.addEventListener("input", (e) => {
 function flushActiveFieldEdit() {
   const el = document.activeElement;
   if (!el || !el.matches || !el.matches("[data-field]") || !el.isContentEditable) return;
+  console.log("[DEBUG-ADD] flushActiveFieldEdit firing on:", el.dataset.field);
   clearTimeout(pendingFieldSaves.get(el));
   commitFieldEdit(el);
 }
 document.addEventListener("visibilitychange", () => {
+  console.log("[DEBUG-ADD] visibilitychange, state =", document.visibilityState);
   if (document.visibilityState === "hidden") flushActiveFieldEdit();
 });
-window.addEventListener("pagehide", flushActiveFieldEdit);
+window.addEventListener("pagehide", () => {
+  console.log("[DEBUG-ADD] pagehide fired");
+  flushActiveFieldEdit();
+});
 
 document.addEventListener("keydown", (e) => {
   const el = e.target.closest("[data-singleline]");
