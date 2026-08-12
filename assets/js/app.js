@@ -1055,14 +1055,24 @@ function commitFieldEdit(el) {
   // as any other ingredient), so every edit directly corrects its baseline —
   // no separate non-standard-dose-override case needed here.
   const addedMatch = /^(ingredientExtra|ingredient)Added(\d+)$/.exec(field);
-  if (addedMatch && value) {
-    saveRecipeEdit(cat, recipe, `${addedMatch[1]}AddedStandard${addedMatch[2]}`, value);
+  if (addedMatch) {
+    const prefix = addedMatch[1];
+    const k = parseInt(addedMatch[2], 10);
+    if (!value) {
+      // Left blank: drop it instead of leaving a permanent empty line, but
+      // only if it's the last one — removing an earlier one would shift
+      // every later index and orphan their saved fields. (This previously
+      // misfired from a spurious early blur caused by firebase-sync.js
+      // wholesale-replacing the local cache from a snapshot echo that
+      // hadn't caught up with this row's own just-issued write yet — fixed
+      // by merging snapshot data into the cache there instead. If a row
+      // still vanishes after that fix, the cause is something else.)
+      const count = getAddedIngredientCount(cat, recipe, prefix);
+      if (k === count - 1) saveRecipeEdit(cat, recipe, `${prefix}AddedCount`, String(count - 1));
+    } else {
+      saveRecipeEdit(cat, recipe, `${prefix}AddedStandard${k}`, value);
+    }
   }
-  // (A blank line used to auto-remove itself here, but that same "blank on
-  // blur" condition could be hit by a spurious/early blur right after the
-  // row was created — before the user had typed anything — silently
-  // deleting a line the user thought they'd just added. A leftover blank
-  // row if someone genuinely abandons one is a smaller cost than that.)
 
   // Typing a new doses number directly should rescale ingredients the same
   // way the up/down arrows do, not just save the raw number.
@@ -1079,7 +1089,16 @@ document.addEventListener("focusout", (e) => {
   const el = e.target.closest("[data-field]");
   if (!el || !el.isContentEditable) return;
   commitFieldEdit(el);
-  router();
+  // Deferred, not synchronous: this same focusout also fires when the blur
+  // is a side effect of mousedown on a DIFFERENT button — e.g. clicking "+"
+  // right after editing a field blurs that field first. Re-rendering here
+  // synchronously replaces the whole page, including the button whose
+  // mousedown just caused this blur, before its own click event gets a
+  // chance to fire — the browser drops a click whose target was removed
+  // from the document mid-gesture, so the click silently does nothing.
+  // commitFieldEdit already saved the data above; only the visual refresh
+  // needs to wait until the current click has fully finished.
+  requestAnimationFrame(router);
 });
 
 // Safety net for mobile: some mobile browsers don't fire focusout before a

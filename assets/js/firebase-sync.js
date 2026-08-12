@@ -22,12 +22,40 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const recipeEditsRef = doc(db, "mealPlanner", "recipeEdits");
 
+// Merges a snapshot's data into the existing local cache instead of
+// replacing it wholesale. Two saveXRemote calls close together (e.g. typing
+// in a field right before clicking "+" to add an ingredient) each start
+// their own independent Firestore round-trip; if their onSnapshot echoes
+// land out of order, an earlier echo arriving after a later write's
+// optimistic update can still only know about writes up to its own moment
+// in time. Replacing the whole cache with that echo would erase the later
+// write's still-pending value from the cache (and, since it also
+// re-renders, from the screen) until its own echo catches up a moment
+// later — visible as something that was just added or edited flickering
+// away and then not coming back if any of that value depended on it (e.g.
+// the "remove if left blank" cleanup for a just-added ingredient line,
+// which would fire against a should-be-there row the merge had briefly
+// hidden). Merging only ever adds/overwrites known fields, so a partial or
+// stale-relative-to-local-writes snapshot can't undo a newer local one.
+function mergeCacheFrom(target, source) {
+  const isPlainObject = (v) => v && typeof v === "object" && !Array.isArray(v);
+  for (const key of Object.keys(source)) {
+    const sourceVal = source[key];
+    if (isPlainObject(sourceVal) && isPlainObject(target[key])) {
+      mergeCacheFrom(target[key], sourceVal);
+    } else {
+      target[key] = sourceVal;
+    }
+  }
+  return target;
+}
+
 window.__recipeEditsCache = {};
 
 onSnapshot(
   recipeEditsRef,
   (snap) => {
-    window.__recipeEditsCache = snap.exists() ? snap.data() : {};
+    if (snap.exists()) mergeCacheFrom(window.__recipeEditsCache, snap.data());
     if (typeof router === "function") router();
   },
   (err) => {
@@ -116,7 +144,7 @@ window.__newRecipesCache = {};
 onSnapshot(
   newRecipesRef,
   (snap) => {
-    window.__newRecipesCache = snap.exists() ? snap.data() : {};
+    if (snap.exists()) mergeCacheFrom(window.__newRecipesCache, snap.data());
     if (typeof router === "function") router();
   },
   (err) => {
@@ -149,7 +177,7 @@ window.__shoppingListCache = {};
 onSnapshot(
   shoppingListRef,
   (snap) => {
-    window.__shoppingListCache = snap.exists() ? snap.data() : {};
+    if (snap.exists()) mergeCacheFrom(window.__shoppingListCache, snap.data());
     if (typeof router === "function") router();
   },
   (err) => {
@@ -176,7 +204,7 @@ window.__shoppingManualCache = {};
 onSnapshot(
   shoppingManualRef,
   (snap) => {
-    window.__shoppingManualCache = snap.exists() ? snap.data() : {};
+    if (snap.exists()) mergeCacheFrom(window.__shoppingManualCache, snap.data());
     if (typeof router === "function") router();
   },
   (err) => {
@@ -204,7 +232,7 @@ window.__shoppingOverridesCache = {};
 onSnapshot(
   shoppingOverridesRef,
   (snap) => {
-    window.__shoppingOverridesCache = snap.exists() ? snap.data() : {};
+    if (snap.exists()) mergeCacheFrom(window.__shoppingOverridesCache, snap.data());
     if (typeof router === "function") router();
   },
   (err) => {
