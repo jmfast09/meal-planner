@@ -961,10 +961,16 @@ document.addEventListener("click", (e) => {
   saveRecipeEdit(cat, recipe, `${prefix}AddedCount`, String(count + 1));
   router();
   const el = document.querySelector(`[data-field="${prefix}Added${count}"]`);
-  if (el) {
-    el.scrollIntoView({ block: "center", behavior: "smooth" });
-    el.focus();
-  }
+  if (!el) return;
+  el.scrollIntoView({ block: "center", behavior: "smooth" });
+  // Deferred: clicking a <button> gives it default focus, which would
+  // otherwise land AFTER our own focus() call (both happen within this same
+  // click) and immediately steal it back — that stray focus->blur on the
+  // brand new (still empty) line was tripping the "remove if left blank"
+  // cleanup in commitFieldEdit, so the line looked like it flashed and
+  // vanished. Running focus() on the next tick, once the browser's own
+  // default click handling has settled, makes it the last word.
+  setTimeout(() => el.focus(), 0);
 });
 
 // Delegated listener: toggles a box between read-only and editable — every
