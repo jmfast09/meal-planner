@@ -50,13 +50,30 @@ function mergeCacheFrom(target, source) {
   return target;
 }
 
+// router() replaces the whole page via innerHTML — calling it while the
+// user has a contenteditable field focused (typing an ingredient, a prep
+// step, anything) removes that focused element from the document, and
+// browsers fire a real "blur" as a direct consequence of that removal. Our
+// own focusout handling then treats that as a deliberate blur — for a
+// brand new, still-empty added-ingredient line, that meant the "remove if
+// left blank" cleanup deleted it. This isn't hypothetical: it fires almost
+// every time, because the "+" click's own write gets echoed back by this
+// exact onSnapshot a moment later, while the new line is still focused and
+// still blank. Skipping the re-render while something is actively focused
+// avoids destroying it out from under the user; the cache is still kept
+// current either way, and the user's own next focusout re-renders normally.
+function isEditingAnyField() {
+  const el = document.activeElement;
+  return !!(el && el.isContentEditable && el.dataset && el.dataset.field);
+}
+
 window.__recipeEditsCache = {};
 
 onSnapshot(
   recipeEditsRef,
   (snap) => {
     if (snap.exists()) mergeCacheFrom(window.__recipeEditsCache, snap.data());
-    if (typeof router === "function") router();
+    if (typeof router === "function" && !isEditingAnyField()) router();
   },
   (err) => {
     console.error("Firestore sync error:", err);
@@ -122,7 +139,7 @@ onSnapshot(
   plannerArchiveRef,
   (snap) => {
     window.__plannerArchiveCache = snap.exists() ? snap.data().list || [] : [];
-    if (typeof router === "function") router();
+    if (typeof router === "function" && !isEditingAnyField()) router();
   },
   (err) => {
     console.error("Firestore planner archive sync error:", err);
@@ -145,7 +162,7 @@ onSnapshot(
   newRecipesRef,
   (snap) => {
     if (snap.exists()) mergeCacheFrom(window.__newRecipesCache, snap.data());
-    if (typeof router === "function") router();
+    if (typeof router === "function" && !isEditingAnyField()) router();
   },
   (err) => {
     console.error("Firestore new-recipes sync error:", err);
@@ -178,7 +195,7 @@ onSnapshot(
   shoppingListRef,
   (snap) => {
     if (snap.exists()) mergeCacheFrom(window.__shoppingListCache, snap.data());
-    if (typeof router === "function") router();
+    if (typeof router === "function" && !isEditingAnyField()) router();
   },
   (err) => {
     console.error("Firestore shopping list sync error:", err);
@@ -205,7 +222,7 @@ onSnapshot(
   shoppingManualRef,
   (snap) => {
     if (snap.exists()) mergeCacheFrom(window.__shoppingManualCache, snap.data());
-    if (typeof router === "function") router();
+    if (typeof router === "function" && !isEditingAnyField()) router();
   },
   (err) => {
     console.error("Firestore manual shopping items sync error:", err);
@@ -233,7 +250,7 @@ onSnapshot(
   shoppingOverridesRef,
   (snap) => {
     if (snap.exists()) mergeCacheFrom(window.__shoppingOverridesCache, snap.data());
-    if (typeof router === "function") router();
+    if (typeof router === "function" && !isEditingAnyField()) router();
   },
   (err) => {
     console.error("Firestore shopping item overrides sync error:", err);
@@ -259,7 +276,7 @@ onSnapshot(
   shoppingSectionOrderRef,
   (snap) => {
     window.__shoppingSectionOrderCache = snap.exists() ? (snap.data().order || []) : [];
-    if (typeof router === "function") router();
+    if (typeof router === "function" && !isEditingAnyField()) router();
   },
   (err) => {
     console.error("Firestore shopping section order sync error:", err);

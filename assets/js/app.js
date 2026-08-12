@@ -1,5 +1,4 @@
 /* Meal Planner — app logic (vanilla JS, hash router, no build step) */
-console.log("[BUILD] app.js loaded — debug-add-v2");
 
 function findCategory(slug) {
   return CATEGORIES.find((c) => c.slug === slug);
@@ -1062,16 +1061,13 @@ function commitFieldEdit(el) {
       // permanent empty line, but only if it's the last one — removing an
       // earlier one would shift every later index and orphan their saved
       // fields. (commitFieldEdit only runs from a real focusout — see
-      // flushActiveFieldEdit below, which deliberately does NOT call this,
-      // since a defensive visibility-flap flush isn't a deliberate blur and
-      // was deleting a just-created row before the user had a chance to
-      // type into it.)
+      // flushActiveFieldEdit below, which deliberately does NOT call this;
+      // see also firebase-sync.js's isEditingAnyField() guard, which stops
+      // an onSnapshot echo of this very row's own write from re-rendering
+      // the page — and thus blurring this still-blank, still-focused row —
+      // out from under the user before they've had a chance to type.)
       const count = getAddedIngredientCount(cat, recipe, prefix);
-      if (k === count - 1) {
-        console.log("[DEBUG-ADD] deleting added row", field, "count", count, "->", count - 1);
-        console.trace("[DEBUG-ADD] delete call stack");
-        saveRecipeEdit(cat, recipe, `${prefix}AddedCount`, String(count - 1));
-      }
+      if (k === count - 1) saveRecipeEdit(cat, recipe, `${prefix}AddedCount`, String(count - 1));
     } else {
       saveRecipeEdit(cat, recipe, `${prefix}AddedStandard${k}`, value);
     }
