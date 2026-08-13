@@ -38,6 +38,13 @@ function isSectionEditable(catSlug, recipeSlug, section) {
   return !!recipeSectionEditMode[`${catSlug}|${recipeSlug}|${section}`];
 }
 
+/* Mobile-only: which of Ingredientes/Preparação/Notas is showing. Desktop
+   always shows every section side by side (see the [data-active-tab] CSS,
+   scoped to the same breakpoint as the rest of the mobile layout) — this
+   state has no effect there. Not keyed per recipe: carrying the last tab
+   across recipes as you browse is the more natural default than resetting. */
+let recipeMobileTab = "ingredients";
+
 function recipeIconUploadHtml() {
   return `
     <label class="recipe-icon-upload" title="Adicionar ícone" aria-label="Adicionar ícone">
@@ -97,6 +104,9 @@ function resizeImageToDataUrl(file, size) {
   });
 }
 
+const NAV_HOME_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7M5 10v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-9"/></svg>`;
+const NAV_PLANNER_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 3v3M16 3v3"/></svg>`;
+
 function tabbarHtml(activeSlug) {
   const plannerActive = activeSlug === "planner" ? "is-active" : "";
   const plannerPill = `<a class="tabpill tabpill-planner ${plannerActive}" style="--pill-bg:${PLANNER_TAB.pastel};--pill-text:${PLANNER_TAB.colorDark}" href="#/planner">${PLANNER_TAB.short}</a>`;
@@ -109,7 +119,21 @@ function tabbarHtml(activeSlug) {
   const shoppingActive = activeSlug === "compras" ? "is-active" : "";
   const shoppingPill = `<a class="tabpill tabpill-icon ${shoppingActive}" href="#/compras" aria-label="Lista de compras" title="Lista de compras"><img src="assets/img/icons/cart.svg" alt="" /></a>`;
 
-  return `<div class="tabbar-wrap"><nav class="tabbar">${plannerPill}${pills}${shoppingPill}</nav></div>`;
+  // Mobile only (see .bottom-nav-mobile in styles.css): a fixed 3-destination
+  // bar replaces the full category pill row, which doesn't fit a phone
+  // width. Categories still live under "Início" (the home grid), same as
+  // today — this doesn't add a page, just a different entry point on small
+  // screens. The desktop pill row above is untouched and still renders.
+  const homeIsActive = activeSlug !== "planner" && activeSlug !== "compras";
+  const bottomNav = `
+    <nav class="bottom-nav-mobile" aria-label="Navegação principal">
+      <a class="bottom-nav-item${homeIsActive ? " is-active" : ""}" href="#/">${NAV_HOME_ICON}<span>Início</span></a>
+      <a class="bottom-nav-item${plannerActive ? " is-active" : ""}" href="#/planner">${NAV_PLANNER_ICON}<span>Planner</span></a>
+      <a class="bottom-nav-item${shoppingActive ? " is-active" : ""}" href="#/compras"><img src="assets/img/icons/cart.svg" alt="" /><span>Lista</span></a>
+    </nav>
+  `;
+
+  return `<div class="tabbar-wrap"><nav class="tabbar">${plannerPill}${pills}${shoppingPill}</nav></div>${bottomNav}`;
 }
 
 function renderHome() {
@@ -470,12 +494,22 @@ function renderRecipe(catSlug, recipeSlug) {
 
   const notasHtml = recipe.notas
     ? `
-      <div class="box notas-box">
+      <div class="box notas-box" data-recipe-tab="notas">
         <div class="box-header">Notas</div>
         <div class="box-body" contenteditable="true" spellcheck="false" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="notas">${escapeHtml(recipe.notas)}</div>
       </div>
     `
     : "";
+
+  // The active tab can't land on Notas if this recipe has none to show.
+  const activeMobileTab = recipeMobileTab === "notas" && !recipe.notas ? "ingredients" : recipeMobileTab;
+  const mobileTabsHtml = `
+    <div class="recipe-tabs-mobile" role="tablist">
+      <button type="button" class="recipe-tab-btn${activeMobileTab === "ingredients" ? " is-active" : ""}" data-tab="ingredients">Ingredientes</button>
+      <button type="button" class="recipe-tab-btn${activeMobileTab === "preparacao" ? " is-active" : ""}" data-tab="preparacao">Preparação</button>
+      ${recipe.notas ? `<button type="button" class="recipe-tab-btn${activeMobileTab === "notas" ? " is-active" : ""}" data-tab="notas">Notas</button>` : ""}
+    </div>
+  `;
 
   const extraIngredients = recipe.ingredientsExtra
     ? `
@@ -518,13 +552,15 @@ function renderRecipe(catSlug, recipeSlug) {
           </div>
 
           <div class="recipe-meta">
-            <span>DOSES: <span contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="doses">${escapeHtml(String(recipe.doses))}</span>${rawRecipe.doses ? dosesStepperHtml(cat.slug, recipe.slug, parseInt(recipe.doses, 10)) : ""}</span>
-            <span>TEMPO DE PREP: <span contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="tempo">${escapeHtml(recipe.tempo)}</span>${tempoFlag}</span>
+            <span class="meta-pill meta-pill-doses"><span contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="doses">${escapeHtml(String(recipe.doses))}</span>&nbsp;doses${rawRecipe.doses ? dosesStepperHtml(cat.slug, recipe.slug, parseInt(recipe.doses, 10)) : ""}</span>
+            <span class="meta-pill meta-pill-tempo"><span contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="tempo">${escapeHtml(recipe.tempo)}</span>&nbsp;de preparo${tempoFlag}</span>
           </div>
 
-          <div class="recipe-grid">
+          ${mobileTabsHtml}
+
+          <div class="recipe-grid" data-active-tab="${activeMobileTab}">
             <div>
-              <div class="box">
+              <div class="box" data-recipe-tab="ingredients">
                 <div class="box-header box-header-actions">
                   Ingredientes
                   ${editToggleBtnHtml(cat.slug, recipe.slug, "ingredients", ingredientsEditing, atNonStandardDoses)}
@@ -536,7 +572,7 @@ function renderRecipe(catSlug, recipeSlug) {
               </div>
               ${notasHtml}
             </div>
-            <div class="box">
+            <div class="box" data-recipe-tab="preparacao">
               <div class="box-header box-header-actions">
                 Preparação
                 ${editToggleBtnHtml(cat.slug, recipe.slug, "preparacao", prepEditing, false)}
@@ -594,8 +630,8 @@ function renderNewRecipe(catSlug) {
           </div>
 
           <div class="recipe-meta">
-            <span>DOSES: <span class="new-recipe-doses" contenteditable="true" spellcheck="false" data-singleline="true" data-placeholder="ex: 4"></span></span>
-            <span>TEMPO DE PREP: <span class="new-recipe-tempo" contenteditable="true" spellcheck="false" data-singleline="true" data-placeholder="ex: 30 min"></span></span>
+            <span class="meta-pill meta-pill-doses"><span class="new-recipe-doses" contenteditable="true" spellcheck="false" data-singleline="true" data-placeholder="ex: 4"></span>&nbsp;doses</span>
+            <span class="meta-pill meta-pill-tempo"><span class="new-recipe-tempo" contenteditable="true" spellcheck="false" data-singleline="true" data-placeholder="ex: 30 min"></span>&nbsp;de preparo</span>
           </div>
 
           <div class="recipe-grid">
@@ -810,6 +846,7 @@ function router() {
     if (recipe) bindRecipeHistory(getEffectiveRecipe(parts[1], recipe));
     bindRecipeDelete();
     bindDosesIncrease();
+    bindRecipeMobileTabs();
   }
 }
 
@@ -925,6 +962,15 @@ function bindDosesIncrease() {
       applyDosesStep(cat, recipeSlug, -1);
     });
   }
+}
+
+function bindRecipeMobileTabs() {
+  document.querySelectorAll(".recipe-tab-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      recipeMobileTab = btn.dataset.tab;
+      router();
+    });
+  });
 }
 
 // Delegated listener: persists checklist state across visits (per recipe step).

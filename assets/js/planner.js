@@ -11,6 +11,11 @@ let plannerViewMode = "current"; // "current" | "archive"
 let plannerArchiveOpenId = null; // id of an archived week currently expanded
 let shoppingAddOpenSection = null; // shopping-list section currently showing its "+" input
 
+// Shared "generate random dish" icon — recolors via currentColor, so one
+// vector works for every category's row (and the header's "generate all")
+// instead of a separate pre-colored sparkle-{slug}.svg per category.
+const REFRESH_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>`;
+
 function plannerEmptyDraft() {
   const menu = {};
   PLANNER_MENU_CATEGORIES.forEach((slug) => { menu[slug] = { dish: "", doses: "" }; });
@@ -489,7 +494,7 @@ function plannerMenuRowHtml(slug, draft, readOnly) {
         ${plannerMenuRowOpenLinkHtml(slug, row.dish)}
         <input type="text" class="menu-dish-input" data-category="${slug}" value="${escapeHtml(row.dish)}" ${readOnly ? "readonly" : ""} autocomplete="off" />
         ${readOnly ? "" : `<div class="menu-suggestions" data-category="${slug}" hidden></div>`}
-        ${readOnly ? "" : `<button type="button" class="menu-row-generate" data-category="${slug}" aria-label="Gerar prato aleatório"><img src="assets/img/icons/sparkle-${slug}.svg" alt="" /></button>`}
+        ${readOnly ? "" : `<button type="button" class="menu-row-generate" data-category="${slug}" aria-label="Gerar prato aleatório" title="Gerar prato aleatório">${REFRESH_ICON}</button>`}
       </div>
       <input type="text" class="menu-doses-input" data-category="${slug}" value="${escapeHtml(row.doses)}" ${readOnly ? "readonly" : ""} />
     </div>
@@ -513,7 +518,7 @@ function plannerExtraRowHtml(draft, readOnly) {
       <div class="menu-row-field">
         ${plannerExtraOpenLinkHtml(row.dish)}
         <input type="text" class="menu-dish-input" data-category="extra" value="${escapeHtml(row.dish)}" ${readOnly ? "readonly" : ""} autocomplete="off" />
-        ${readOnly ? "" : `<button type="button" class="menu-row-generate" data-category="extra" aria-label="Gerar prato aleatório"><img src="assets/img/icons/sparkle-extra.svg" alt="" /></button>`}
+        ${readOnly ? "" : `<button type="button" class="menu-row-generate" data-category="extra" aria-label="Gerar prato aleatório" title="Gerar prato aleatório">${REFRESH_ICON}</button>`}
       </div>
       <input type="text" class="menu-doses-input" data-category="extra" value="${escapeHtml(row.doses)}" ${readOnly ? "readonly" : ""} />
     </div>
@@ -526,6 +531,174 @@ function plannerTotalRowHtml(draft) {
       <span class="menu-row-label">TOTAL</span>
       <div class="menu-row-field"></div>
       <span class="menu-doses-total">${plannerTotalDoses(draft)}</span>
+    </div>
+  `;
+}
+
+/* ---------- Mobile Planner (phone-width only) ----------
+   A second rendering of the same "Menu da semana" + weekly grid, sharing
+   the exact same `draft` object and save functions as the desktop version
+   above — CSS alone decides which one is visible (see .planner-desktop-only
+   / .planner-mobile-only in styles.css), at the same breakpoint used
+   everywhere else in the mobile redesign. Reused as-is for the read-only
+   archive detail view too (readOnly=true), which is why every piece here
+   branches on readOnly the same way the desktop functions do. */
+const SUN_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.9 19.1l1.7-1.7M17.4 6.6l1.7-1.7"/></svg>`;
+const MOON_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 13.3A8.5 8.5 0 1 1 10.7 3.5a6.8 6.8 0 0 0 9.8 9.8Z"/></svg>`;
+const THIN_X_ICON = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>`;
+const THIN_PLUS_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
+
+let plannerMobileOpenDays = new Set();
+let plannerMobileSheetCategory = null; // slug of the open "choose a dish" sheet, or null
+let plannerMobileSheetQuery = "";
+let plannerMobileSheetQueryFocused = false;
+
+function plannerMobileChipHtml(slug, draft, readOnly) {
+  const isExtra = slug === "extra";
+  const cat = isExtra ? null : findCategory(slug);
+  const row = draft.menu[slug] || { dish: "", doses: "" };
+  const bg = isExtra ? "#FFCFE0" : cat.pastel;
+  const text = isExtra ? "#F884AF" : cat.colorDark;
+  const short = isExtra ? "EXTRA" : cat.short;
+  const tag = readOnly ? "div" : "button";
+  const typeAttr = readOnly ? "" : ` type="button"`;
+  const dishText = row.dish ? escapeHtml(row.dish) : (readOnly ? "—" : "Escolher prato…");
+  return `
+    <${tag}${typeAttr} class="mobile-menu-chip${isExtra ? " mobile-menu-chip-extra" : ""}" style="--c:${text};--bg:${bg}" data-category="${slug}">
+      <span class="mobile-menu-chip-cat">${short}</span>
+      <span class="mobile-menu-chip-dish">${dishText}</span>
+    </${tag}>
+  `;
+}
+
+function plannerMobileMenuHtml(draft, readOnly) {
+  const chips = PLANNER_MENU_CATEGORIES.map((slug) => plannerMobileChipHtml(slug, draft, readOnly)).join("")
+    + plannerMobileChipHtml("extra", draft, readOnly);
+  return `
+    <div class="mobile-menu-head">
+      <span class="mobile-section-label">Menu da semana${readOnly ? "" : " · toca para trocar"}</span>
+      ${readOnly ? "" : `<button type="button" class="menu-generate-all" aria-label="Gerar menu aleatório" title="Gerar menu aleatório">${REFRESH_ICON}</button>`}
+    </div>
+    <div class="mobile-menu-chips">${chips}</div>
+  `;
+}
+
+function plannerMobileMealHtml(day, meal, draft, readOnly) {
+  const cell = draft.grid[day.key] || {};
+  const value = cell[meal] || "";
+  const highlight = cell[`${meal}Highlight`] || "";
+  const isTupperwareCell = day.weekday && meal === "almoco";
+  const count = isTupperwareCell ? (cell.tupperware || 0) : 0;
+  const mealLabel = meal === "almoco" ? "Almoço" : "Jantar";
+  const mealIcon = meal === "almoco" ? SUN_ICON : MOON_ICON;
+
+  if (readOnly) {
+    return `
+      <div class="mobile-meal-row mobile-meal-row-readonly">
+        <span class="mobile-meal-icon mobile-meal-icon-${meal}">${mealIcon}</span>
+        <span class="mobile-meal-text">${value ? escapeHtml(value) : "—"}</span>
+      </div>
+    `;
+  }
+
+  const tupperwareHtml = isTupperwareCell
+    ? `<button type="button" class="mobile-tupperware-btn" data-day="${day.key}" data-count="${count}" aria-label="Tupperware" title="Tupperware">${THIN_PLUS_ICON}</button>${plannerIconHtml(count)}`
+    : "";
+
+  // Hidden by default (see .mobile-highlight-picker.is-visible in
+  // styles.css) — only revealed while this row's textarea is focused, per
+  // the "só quando o texto do prato é selecionado" request. Reuses the
+  // existing pink/green highlight values (just shown as sun/moon here) so
+  // the desktop swatch for the same cell keeps working unchanged.
+  const pickerHtml = `
+    <div class="mobile-highlight-picker">
+      <button type="button" class="mobile-highlight-btn${highlight === "pink" ? " is-active" : ""}" data-day="${day.key}" data-meal="${meal}" data-color="pink" aria-label="Destaque amarelo" title="Destaque amarelo">${SUN_ICON}</button>
+      <button type="button" class="mobile-highlight-btn${highlight === "green" ? " is-active" : ""}" data-day="${day.key}" data-meal="${meal}" data-color="green" aria-label="Destaque azul" title="Destaque azul">${MOON_ICON}</button>
+    </div>
+  `;
+
+  return `
+    <div class="mobile-meal-row${highlight ? ` highlight-${highlight}` : ""}" data-day="${day.key}" data-meal="${meal}">
+      <span class="mobile-meal-label">${mealLabel}</span>
+      <textarea class="mobile-grid-textarea" data-day="${day.key}" data-meal="${meal}" rows="1" placeholder="">${escapeHtml(value)}</textarea>
+      ${tupperwareHtml}
+      ${pickerHtml}
+    </div>
+  `;
+}
+
+function plannerMobileDayHtml(day, draft, readOnly) {
+  if (readOnly) {
+    return `
+      <div class="mobile-day mobile-day-readonly">
+        <span class="mobile-day-tag">${day.short}</span>
+        <div class="mobile-day-readonly-meals">
+          ${plannerMobileMealHtml(day, "almoco", draft, true)}
+          ${plannerMobileMealHtml(day, "jantar", draft, true)}
+        </div>
+      </div>
+    `;
+  }
+
+  const cell = draft.grid[day.key] || {};
+  const isOpen = plannerMobileOpenDays.has(day.key);
+  return `
+    <div class="mobile-day" data-day="${day.key}" data-expanded="${isOpen ? "1" : "0"}">
+      <button type="button" class="mobile-day-head">
+        <span class="mobile-day-tag">${day.short}</span>
+        <span class="mobile-day-preview">
+          <span class="mobile-meal-preview"><span class="mobile-meal-icon mobile-meal-icon-almoco">${SUN_ICON}</span>${escapeHtml(cell.almoco || "—")}</span>
+          <span class="mobile-meal-preview"><span class="mobile-meal-icon mobile-meal-icon-jantar">${MOON_ICON}</span>${escapeHtml(cell.jantar || "—")}</span>
+        </span>
+        <span class="mobile-day-chevron">›</span>
+      </button>
+      <div class="mobile-day-body"${isOpen ? "" : " hidden"}>
+        ${plannerMobileMealHtml(day, "almoco", draft, false)}
+        ${plannerMobileMealHtml(day, "jantar", draft, false)}
+      </div>
+    </div>
+  `;
+}
+
+function plannerMobileWeekHtml(draft, readOnly) {
+  const rows = PLANNER_DAYS.map((day) => plannerMobileDayHtml(day, draft, readOnly)).join("");
+  return `<div class="mobile-days${readOnly ? " mobile-days-readonly" : ""}">${rows}</div>`;
+}
+
+/* The category-choice bottom sheet — only ever needed for the live,
+   editable "Semana atual" view (readOnly archive details have no chips to
+   tap), so this is only called once per render, never duplicated. Extra
+   has no fixed dish list on desktop either (just free text + "random from
+   any category"), so it gets its own simpler branch here to match. */
+function plannerMobileSheetHtml() {
+  const slug = plannerMobileSheetCategory;
+  const isExtra = slug === "extra";
+  const cat = slug && !isExtra ? findCategory(slug) : null;
+  const title = isExtra ? "Extra" : (cat ? cat.short.charAt(0) + cat.short.slice(1).toLowerCase() : "");
+  const q = plannerMobileSheetQuery.trim().toLowerCase();
+  const options = slug && !isExtra ? plannerDishOptions(slug).filter((o) => o.name.toLowerCase().includes(q)) : [];
+
+  const listHtml = isExtra
+    ? `<p class="mobile-sheet-hint">Escreve o nome ou usa o botão aleatório — o Extra não tem lista fixa, tal como no desktop.</p>`
+    : options.length
+      ? options.map((o) => `<div class="mobile-sheet-item" data-name="${escapeHtml(o.name)}" data-doses="${escapeHtml(o.doses)}"><span>${escapeHtml(o.name)}</span><span class="d">${o.doses ? escapeHtml(o.doses) + " doses" : ""}</span></div>`).join("")
+      : `<p class="mobile-sheet-hint">Sem pratos a corresponder.</p>`;
+
+  return `
+    <div class="mobile-sheet-backdrop${slug ? " is-open" : ""}"></div>
+    <div class="mobile-sheet${slug ? " is-open" : ""}">
+      <div class="mobile-sheet-handle"></div>
+      <div class="mobile-sheet-head">
+        <span class="mobile-sheet-title">${escapeHtml(title)}</span>
+        <button type="button" class="mobile-sheet-close" aria-label="Fechar">${THIN_X_ICON}</button>
+      </div>
+      <div class="mobile-sheet-search-row">
+        ${isExtra
+          ? `<input type="text" class="mobile-sheet-freetext" placeholder="Escreve o prato..." autocomplete="off" />`
+          : `<input type="text" class="mobile-sheet-search" placeholder="Procurar prato..." autocomplete="off" value="${escapeHtml(plannerMobileSheetQuery)}" />`}
+        <button type="button" class="mobile-sheet-random" data-category="${slug || ""}" aria-label="Prato aleatório" title="Prato aleatório">${REFRESH_ICON}</button>
+      </div>
+      <div class="mobile-sheet-list">${listHtml}</div>
     </div>
   `;
 }
@@ -558,19 +731,20 @@ function plannerFormHtml(draft, readOnly) {
         <textarea class="notes-textarea" ${readOnly ? "readonly" : ""} placeholder="">${escapeHtml(draft.notes)}</textarea>
       </div>
 
-      <div class="menu-box">
+      <div class="menu-box planner-desktop-only">
         <div class="menu-box-head">
           <span class="menu-title-group">
             <span class="menu-title">Menu da semana</span>
-            ${readOnly ? "" : `<button type="button" class="menu-generate-all" aria-label="Gerar menu aleatório"><img src="assets/img/icons/generate.svg" alt="" /></button>`}
+            ${readOnly ? "" : `<button type="button" class="menu-generate-all" aria-label="Gerar menu aleatório" title="Gerar menu aleatório">${REFRESH_ICON}</button>`}
           </span>
           <span class="menu-doses-head">doses</span>
         </div>
         <div class="menu-table">${menuRows}</div>
       </div>
+      <div class="mobile-menu-box planner-mobile-only">${plannerMobileMenuHtml(draft, readOnly)}</div>
     </div>
 
-    <div class="weekly-table">
+    <div class="weekly-table planner-desktop-only">
       <div class="weekly-head">
         <div class="day-label"></div>
         <div class="meal-head">ALMOÇO</div>
@@ -578,6 +752,8 @@ function plannerFormHtml(draft, readOnly) {
       </div>
       ${weeklyRows}
     </div>
+    <div class="planner-mobile-only">${plannerMobileWeekHtml(draft, readOnly)}</div>
+    ${readOnly ? "" : plannerMobileSheetHtml()}
   `;
 }
 
@@ -854,26 +1030,22 @@ function bindPlannerEvents() {
     }
   });
 
-  // header sparkle button: random dish for every category at once
-  const generateAllBtn = root.querySelector(".menu-generate-all");
-  if (generateAllBtn) {
+  // header sparkle button: random dish for every category at once (desktop
+  // and mobile each render their own instance of this button, both bound
+  // here — simplest to just re-render fully afterward rather than patch
+  // both layouts' DOM by hand).
+  root.querySelectorAll(".menu-generate-all").forEach((generateAllBtn) => {
     generateAllBtn.addEventListener("click", () => {
       PLANNER_MENU_CATEGORIES.forEach((slug) => {
         const pick = plannerRandomDish(slug);
         if (!pick) return;
         draft.menu[slug].dish = pick.name;
         draft.menu[slug].doses = pick.doses;
-        const rowInput = root.querySelector(`.menu-dish-input[data-category="${slug}"]`);
-        const rowDoses = root.querySelector(`.menu-doses-input[data-category="${slug}"]`);
-        if (rowInput) rowInput.value = pick.name;
-        if (rowDoses) rowDoses.value = pick.doses;
-        updateMenuRowOpenLink(slug);
       });
       persist();
-      const totalEl = root.querySelector(".menu-doses-total");
-      if (totalEl) totalEl.textContent = plannerTotalDoses(draft);
+      router();
     });
-  }
+  });
 
   // weekly grid cells: free text + drop target
   root.querySelectorAll(".grid-textarea").forEach((textarea) => {
@@ -1032,6 +1204,141 @@ function bindPlannerEvents() {
       router();
     });
   });
+
+  // ---------- Mobile Planner bindings (phone-width only) ----------
+  // Same `draft`/`persist` as the desktop bindings above — just a second
+  // set of DOM hooks for the mobile-only markup.
+
+  root.querySelectorAll(".mobile-day-head").forEach((head) => {
+    head.addEventListener("click", () => {
+      const day = head.closest(".mobile-day").dataset.day;
+      if (plannerMobileOpenDays.has(day)) plannerMobileOpenDays.delete(day);
+      else plannerMobileOpenDays.add(day);
+      router();
+    });
+  });
+
+  // Dish text: same persistence as desktop's .grid-textarea. The
+  // highlight-picker focus/blur reveal never re-renders (a full re-render
+  // mid-keystroke would drop the cursor and the on-screen keyboard).
+  root.querySelectorAll(".mobile-grid-textarea").forEach((textarea) => {
+    const day = textarea.dataset.day;
+    const meal = textarea.dataset.meal;
+    const row = textarea.closest(".mobile-meal-row");
+
+    const autoGrow = () => {
+      textarea.style.height = "auto";
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    };
+    autoGrow();
+
+    textarea.addEventListener("input", () => {
+      draft.grid[day][meal] = textarea.value;
+      persist();
+      autoGrow();
+    });
+    textarea.addEventListener("focus", () => {
+      const picker = row.querySelector(".mobile-highlight-picker");
+      if (picker) picker.classList.add("is-visible");
+    });
+    textarea.addEventListener("blur", () => {
+      const picker = row.querySelector(".mobile-highlight-picker");
+      if (picker) picker.classList.remove("is-visible");
+    });
+  });
+
+  // Sun = "pink", moon = "green" — the same two highlight values the
+  // desktop swatch already stores, just shown as sun/moon here.
+  root.querySelectorAll(".mobile-highlight-btn").forEach((btn) => {
+    // Keeps the textarea focused through the click so its own blur handler
+    // above doesn't hide this button out from under the tap first.
+    btn.addEventListener("mousedown", (e) => e.preventDefault());
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const { day, meal, color } = btn.dataset;
+      const current = draft.grid[day][`${meal}Highlight`] || "";
+      draft.grid[day][`${meal}Highlight`] = current === color ? "" : color;
+      persist();
+      router();
+    });
+  });
+
+  root.querySelectorAll(".mobile-tupperware-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const day = btn.dataset.day;
+      const n = (parseInt(btn.dataset.count, 10) + 1) % 3;
+      draft.grid[day].tupperware = n;
+      persist();
+      router();
+    });
+  });
+
+  root.querySelectorAll(".mobile-menu-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      plannerMobileSheetCategory = chip.dataset.category;
+      plannerMobileSheetQuery = "";
+      router();
+    });
+  });
+
+  const mobileSheetClose = root.querySelector(".mobile-sheet-close");
+  if (mobileSheetClose) mobileSheetClose.addEventListener("click", () => { plannerMobileSheetCategory = null; router(); });
+  const mobileSheetBackdrop = root.querySelector(".mobile-sheet-backdrop");
+  if (mobileSheetBackdrop) mobileSheetBackdrop.addEventListener("click", () => { plannerMobileSheetCategory = null; router(); });
+
+  function applyMobileSheetChoice(slug, name, doses) {
+    draft.menu[slug] = draft.menu[slug] || { dish: "", doses: "" };
+    draft.menu[slug].dish = name;
+    if (doses !== undefined && doses !== null && doses !== "") draft.menu[slug].doses = doses;
+    persist();
+    plannerMobileSheetCategory = null;
+    router();
+  }
+
+  const mobileSheetSearch = root.querySelector(".mobile-sheet-search");
+  if (mobileSheetSearch) {
+    mobileSheetSearch.addEventListener("input", () => {
+      plannerMobileSheetQuery = mobileSheetSearch.value;
+      plannerMobileSheetQueryFocused = true;
+      router();
+    });
+    if (plannerMobileSheetQueryFocused) {
+      const val = mobileSheetSearch.value;
+      mobileSheetSearch.focus();
+      mobileSheetSearch.setSelectionRange(val.length, val.length);
+      plannerMobileSheetQueryFocused = false;
+    }
+  }
+
+  root.querySelectorAll(".mobile-sheet-item").forEach((item) => {
+    item.addEventListener("click", () => {
+      applyMobileSheetChoice(plannerMobileSheetCategory, item.dataset.name, item.dataset.doses);
+    });
+  });
+
+  const mobileSheetFreetext = root.querySelector(".mobile-sheet-freetext");
+  if (mobileSheetFreetext) {
+    const commitFreetext = () => {
+      const val = mobileSheetFreetext.value.trim();
+      if (val) applyMobileSheetChoice(plannerMobileSheetCategory, val);
+      else { plannerMobileSheetCategory = null; router(); }
+    };
+    mobileSheetFreetext.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); commitFreetext(); }
+    });
+    mobileSheetFreetext.addEventListener("blur", commitFreetext);
+  }
+
+  const mobileSheetRandom = root.querySelector(".mobile-sheet-random");
+  if (mobileSheetRandom) {
+    mobileSheetRandom.addEventListener("click", () => {
+      const slug = mobileSheetRandom.dataset.category;
+      const pick = slug === "extra" ? plannerRandomDishAnyCategory() : plannerRandomDish(slug);
+      if (!pick) return;
+      applyMobileSheetChoice(slug, pick.name, pick.doses);
+    });
+  }
 }
 
 /* ---------- Shopping list ---------- */
