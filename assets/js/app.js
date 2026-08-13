@@ -553,7 +553,7 @@ function renderRecipe(catSlug, recipeSlug) {
 
           <div class="recipe-meta">
             <span class="meta-pill meta-pill-doses"><span contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="doses">${escapeHtml(String(recipe.doses))}</span>&nbsp;doses${rawRecipe.doses ? dosesStepperHtml(cat.slug, recipe.slug, parseInt(recipe.doses, 10)) : ""}</span>
-            <span class="meta-pill meta-pill-tempo"><span contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="tempo">${escapeHtml(recipe.tempo)}</span>&nbsp;de preparo${tempoFlag}</span>
+            <span class="meta-pill meta-pill-tempo"><span contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="tempo">${escapeHtml(recipe.tempo)}</span>&nbsp;de preparação${tempoFlag}</span>
           </div>
 
           ${mobileTabsHtml}
@@ -631,7 +631,7 @@ function renderNewRecipe(catSlug) {
 
           <div class="recipe-meta">
             <span class="meta-pill meta-pill-doses"><span class="new-recipe-doses" contenteditable="true" spellcheck="false" data-singleline="true" data-placeholder="ex: 4"></span>&nbsp;doses</span>
-            <span class="meta-pill meta-pill-tempo"><span class="new-recipe-tempo" contenteditable="true" spellcheck="false" data-singleline="true" data-placeholder="ex: 30 min"></span>&nbsp;de preparo</span>
+            <span class="meta-pill meta-pill-tempo"><span class="new-recipe-tempo" contenteditable="true" spellcheck="false" data-singleline="true" data-placeholder="ex: 30 min"></span>&nbsp;de preparação</span>
           </div>
 
           <div class="recipe-grid">
