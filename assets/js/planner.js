@@ -11,11 +11,6 @@ let plannerViewMode = "current"; // "current" | "archive"
 let plannerArchiveOpenId = null; // id of an archived week currently expanded
 let shoppingAddOpenSection = null; // shopping-list section currently showing its "+" input
 
-// Shared "generate random dish" icon — recolors via currentColor, so one
-// vector works for every category's row (and the header's "generate all")
-// instead of a separate pre-colored sparkle-{slug}.svg per category.
-const REFRESH_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>`;
-
 function plannerEmptyDraft() {
   const menu = {};
   PLANNER_MENU_CATEGORIES.forEach((slug) => { menu[slug] = { dish: "", doses: "" }; });
@@ -494,7 +489,7 @@ function plannerMenuRowHtml(slug, draft, readOnly) {
         ${plannerMenuRowOpenLinkHtml(slug, row.dish)}
         <input type="text" class="menu-dish-input" data-category="${slug}" value="${escapeHtml(row.dish)}" ${readOnly ? "readonly" : ""} autocomplete="off" />
         ${readOnly ? "" : `<div class="menu-suggestions" data-category="${slug}" hidden></div>`}
-        ${readOnly ? "" : `<button type="button" class="menu-row-generate" data-category="${slug}" aria-label="Gerar prato aleatório" title="Gerar prato aleatório">${REFRESH_ICON}</button>`}
+        ${readOnly ? "" : `<button type="button" class="menu-row-generate" data-category="${slug}" aria-label="Gerar prato aleatório"><img src="assets/img/icons/sparkle-${slug}.svg" alt="" /></button>`}
       </div>
       <input type="text" class="menu-doses-input" data-category="${slug}" value="${escapeHtml(row.doses)}" ${readOnly ? "readonly" : ""} />
     </div>
@@ -518,7 +513,7 @@ function plannerExtraRowHtml(draft, readOnly) {
       <div class="menu-row-field">
         ${plannerExtraOpenLinkHtml(row.dish)}
         <input type="text" class="menu-dish-input" data-category="extra" value="${escapeHtml(row.dish)}" ${readOnly ? "readonly" : ""} autocomplete="off" />
-        ${readOnly ? "" : `<button type="button" class="menu-row-generate" data-category="extra" aria-label="Gerar prato aleatório" title="Gerar prato aleatório">${REFRESH_ICON}</button>`}
+        ${readOnly ? "" : `<button type="button" class="menu-row-generate" data-category="extra" aria-label="Gerar prato aleatório"><img src="assets/img/icons/sparkle-extra.svg" alt="" /></button>`}
       </div>
       <input type="text" class="menu-doses-input" data-category="extra" value="${escapeHtml(row.doses)}" ${readOnly ? "readonly" : ""} />
     </div>
@@ -577,7 +572,7 @@ function plannerMobileMenuHtml(draft, readOnly) {
   return `
     <div class="mobile-menu-head">
       <span class="mobile-section-label">Menu da semana${readOnly ? "" : " · toca para trocar"}</span>
-      ${readOnly ? "" : `<button type="button" class="menu-generate-all" aria-label="Gerar menu aleatório" title="Gerar menu aleatório">${REFRESH_ICON}</button>`}
+      ${readOnly ? "" : `<button type="button" class="menu-generate-all" aria-label="Gerar menu aleatório"><img src="assets/img/icons/generate.svg" alt="" /></button>`}
     </div>
     <div class="mobile-menu-chips">${chips}</div>
   `;
@@ -696,7 +691,7 @@ function plannerMobileSheetHtml() {
         ${isExtra
           ? `<input type="text" class="mobile-sheet-freetext" placeholder="Escreve o prato..." autocomplete="off" />`
           : `<input type="text" class="mobile-sheet-search" placeholder="Procurar prato..." autocomplete="off" value="${escapeHtml(plannerMobileSheetQuery)}" />`}
-        <button type="button" class="mobile-sheet-random" data-category="${slug || ""}" aria-label="Prato aleatório" title="Prato aleatório">${REFRESH_ICON}</button>
+        <button type="button" class="mobile-sheet-random" data-category="${slug || ""}" aria-label="Prato aleatório" title="Prato aleatório"><img src="assets/img/icons/generate.svg" alt="" /></button>
       </div>
       <div class="mobile-sheet-list">${listHtml}</div>
     </div>
@@ -735,7 +730,7 @@ function plannerFormHtml(draft, readOnly) {
         <div class="menu-box-head">
           <span class="menu-title-group">
             <span class="menu-title">Menu da semana</span>
-            ${readOnly ? "" : `<button type="button" class="menu-generate-all" aria-label="Gerar menu aleatório" title="Gerar menu aleatório">${REFRESH_ICON}</button>`}
+            ${readOnly ? "" : `<button type="button" class="menu-generate-all" aria-label="Gerar menu aleatório"><img src="assets/img/icons/generate.svg" alt="" /></button>`}
           </span>
           <span class="menu-doses-head">doses</span>
         </div>
