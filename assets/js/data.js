@@ -722,7 +722,6 @@ const RECIPES = {
       icon: "penne",
       doses: 4,
       tempo: "1h",
-      tempoFlag: "confirmar tempo de prep",
       ingredients: [
         "600g de camarões c/cabeça (frescos)",
         "Frasco de molho pesto",
