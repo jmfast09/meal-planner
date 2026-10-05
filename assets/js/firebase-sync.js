@@ -7,6 +7,8 @@ import {
   doc,
   onSnapshot,
   setDoc,
+  arrayUnion,
+  arrayRemove,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -146,11 +148,33 @@ onSnapshot(
   }
 );
 
-window.savePlannerArchiveRemote = function (list) {
-  window.__plannerArchiveCache = list; // optimistic
-  setDoc(plannerArchiveRef, { list }).catch((err) => {
-    console.error("Failed to save planner archive:", err);
-    alert("Não foi possível guardar o arquivo (sem ligação?). Tenta novamente.");
+// Adding/removing a single entry goes through arrayUnion/arrayRemove instead
+// of a whole-list setDoc, which would depend on window.__plannerArchiveCache
+// already being loaded — if a save/delete fires before this doc's first
+// onSnapshot arrives (cache still null, so plannerLoadArchive() falls back to
+// []), that setDoc would silently overwrite every other saved week with just
+// the one entry. arrayUnion/arrayRemove apply server-side against whatever is
+// actually stored, so a stale or empty local cache can never clobber it; the
+// {merge:true} also means this doc doesn't need to exist yet (e.g. the very
+// first week anyone ever archives).
+window.addPlannerArchiveEntryRemote = function (entry) {
+  const cache = window.__plannerArchiveCache;
+  if (Array.isArray(cache)) cache.push(entry); // optimistic
+  setDoc(plannerArchiveRef, { list: arrayUnion(entry) }, { merge: true }).catch((err) => {
+    console.error("Failed to add planner archive entry:", err);
+    alert("Não foi possível guardar a semana no Arquivo (sem ligação?). Tenta novamente.");
+  });
+};
+
+window.removePlannerArchiveEntryRemote = function (entry) {
+  const cache = window.__plannerArchiveCache;
+  if (Array.isArray(cache)) {
+    const idx = cache.findIndex((e) => e.id === entry.id);
+    if (idx !== -1) cache.splice(idx, 1); // optimistic
+  }
+  setDoc(plannerArchiveRef, { list: arrayRemove(entry) }, { merge: true }).catch((err) => {
+    console.error("Failed to remove planner archive entry:", err);
+    alert("Não foi possível apagar a semana do Arquivo (sem ligação?). Tenta novamente.");
   });
 };
 

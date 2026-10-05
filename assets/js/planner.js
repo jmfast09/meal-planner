@@ -50,10 +50,6 @@ function plannerLoadArchive() {
   return Array.isArray(window.__plannerArchiveCache) ? window.__plannerArchiveCache : [];
 }
 
-function plannerSaveArchive(list) {
-  if (window.savePlannerArchiveRemote) window.savePlannerArchiveRemote(list);
-}
-
 /* Weeks (from the archive) where a given dish was set in the Menu da semana table. */
 function plannerFindWeeksForDish(dishName) {
   const needle = dishName.trim().toLowerCase();
@@ -1128,9 +1124,7 @@ function bindPlannerEvents() {
   if (saveBtn) {
     saveBtn.addEventListener("click", () => {
       const entry = { ...JSON.parse(JSON.stringify(draft)), id: String(Date.now()), savedAt: new Date().toISOString() };
-      const archive = plannerLoadArchive();
-      archive.push(entry);
-      plannerSaveArchive(archive);
+      if (window.addPlannerArchiveEntryRemote) window.addPlannerArchiveEntryRemote(entry);
       alert("Semana guardada no Arquivo.");
     });
   }
@@ -1194,8 +1188,8 @@ function bindPlannerEvents() {
     btn.addEventListener("click", () => {
       if (!confirm("Apagar esta semana do Arquivo?")) return;
       const id = btn.dataset.id;
-      const archive = plannerLoadArchive().filter((e) => e.id !== id);
-      plannerSaveArchive(archive);
+      const entry = plannerLoadArchive().find((e) => e.id === id);
+      if (entry && window.removePlannerArchiveEntryRemote) window.removePlannerArchiveEntryRemote(entry);
       router();
     });
   });
