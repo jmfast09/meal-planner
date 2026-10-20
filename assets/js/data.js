@@ -553,7 +553,6 @@ const RECIPES = {
           2: "1 c. de sopa de manteiga",
           3: "2 c. de sopa de manteiga",
           4: "2 c. de sopa de manteiga",
-          5: "2 c. de sopa de manteiga",
           7: "3 c. de sopa de manteiga",
           8: "3 c. de sopa de manteiga",
         },
@@ -562,7 +561,6 @@ const RECIPES = {
           2: "6 batatas pequenas",
           3: "6 batatas pequenas",
           4: "6 batatas pequenas",
-          5: "8 batatas pequenas",
         },
       },
       preparacao: [
