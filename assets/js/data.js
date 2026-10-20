@@ -533,7 +533,7 @@ const RECIPES = {
       slug: "gratinado-batata-alho-frances",
       name: "Gratinado de Batata e Alho Francês",
       icon: "gratinado",
-      doses: 6,
+      doses: 5,
       tempo: "1h30",
       ingredients: [
         "3 c. de sopa de manteiga",
