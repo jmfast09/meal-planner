@@ -54,6 +54,19 @@ function recipeIconUploadHtml() {
   `;
 }
 
+/* Same upload mechanism as recipeIconUploadHtml (new-recipe form), but for
+   an already-saved recipe: saves straight to Firestore on pick instead of
+   staging on a wrapper for a later "save" click, matching every other
+   field on this page. */
+function recipeIconEditHtml(catSlug, recipeSlug) {
+  return `
+    <label class="planner-btn planner-btn-icon recipe-icon-edit-btn" title="Mudar ícone" aria-label="Mudar ícone">
+      <input type="file" accept="image/*" class="recipe-icon-edit-input" data-cat="${catSlug}" data-recipe="${recipeSlug}" hidden />
+      ${EDIT_ICON}
+    </label>
+  `;
+}
+
 /* Reads an image file, center-crops it to a square, and downsizes it to a
    compact data URL so it fits comfortably in a Firestore document. */
 function resizeImageToDataUrl(file, size) {
@@ -176,7 +189,7 @@ function recipeRowIconHtml(recipe) {
   if (recipe.iconData) return `<img class="recipe-row-icon" src="${recipe.iconData}" alt="" />`;
   return recipe.icon
     ? `<img class="recipe-row-icon" src="assets/img/icons/recipes/${recipe.icon}.svg" alt="" />`
-    : `<span class="recipe-row-icon recipe-row-icon-placeholder">${PLATE_ICON}</span>`;
+    : `<span class="recipe-row-icon recipe-row-icon-placeholder">${CLOCHE_ICON}</span>`;
 }
 
 function renderCategoryList(cat) {
@@ -538,6 +551,7 @@ function renderRecipe(catSlug, recipeSlug) {
 
         <div class="recipe-page">
           <div class="recipe-actions">
+            ${recipeIconEditHtml(cat.slug, recipe.slug)}
             <button type="button" class="planner-btn planner-btn-icon recipe-delete-btn" data-cat="${cat.slug}" data-recipe="${recipe.slug}" title="Apagar receita" aria-label="Apagar receita">
               ${TRASH_ICON}
             </button>
@@ -547,7 +561,7 @@ function renderRecipe(catSlug, recipeSlug) {
               ? `<img class="recipe-dish-icon" src="${recipe.iconData}" alt="" />`
               : recipe.icon
                 ? `<img class="recipe-dish-icon" src="assets/img/icons/recipes/${recipe.icon}.svg" alt="" />`
-                : `<div class="recipe-icon">${PLATE_ICON}</div>`}
+                : `<div class="recipe-icon">${CLOCHE_ICON}</div>`}
             <h1 contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="name">${escapeHtml(recipe.name)}</h1>
           </div>
 
@@ -1045,6 +1059,28 @@ document.addEventListener("change", (e) => {
         const preview = wrap.querySelector(".recipe-icon-preview");
         if (preview) preview.outerHTML = `<img class="recipe-icon-preview recipe-dish-icon" src="${dataUrl}" alt="" />`;
       }
+    })
+    .catch((err) => {
+      console.error("Failed to process uploaded icon:", err);
+      alert("Não foi possível processar essa imagem. Tenta outra.");
+    });
+});
+
+// Delegated listener: icon upload for an already-saved recipe (the pencil
+// next to the delete button) — unlike the new-recipe uploader above, this
+// saves straight to Firestore on pick, same as every other field here.
+document.addEventListener("change", (e) => {
+  const input = e.target;
+  if (!input.matches || !input.matches(".recipe-icon-edit-input")) return;
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const { cat, recipe } = input.dataset;
+  if (!cat || !recipe) return;
+
+  resizeImageToDataUrl(file, 480)
+    .then((dataUrl) => {
+      saveRecipeEdit(cat, recipe, "iconData", dataUrl);
+      router();
     })
     .catch((err) => {
       console.error("Failed to process uploaded icon:", err);
