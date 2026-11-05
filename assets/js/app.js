@@ -477,8 +477,27 @@ function bindRecipeHistory(recipe) {
   renderList();
 }
 
+// DOSES is free text (e.g. "6", "¼", "1.5"), not strictly numeric — these
+// two keep the +/- stepper, the field-edit rescale, and the disabled-state
+// check all agreeing on what a given value actually means, instead of each
+// re-parsing it with plain parseInt (which returns NaN for "¼"/"½", silently
+// breaking the stepper for any recipe at a fractional dose count).
+const DOSE_FRACTIONS = { "¼": 0.25, "½": 0.5, "¾": 0.75 };
+const DOSE_FRACTION_LABELS = { 0.25: "¼", 0.5: "½", 0.75: "¾" };
+
+function parseDoseValue(value) {
+  if (value === null || value === undefined) return NaN;
+  const trimmed = String(value).trim();
+  if (Object.prototype.hasOwnProperty.call(DOSE_FRACTIONS, trimmed)) return DOSE_FRACTIONS[trimmed];
+  return parseFloat(trimmed.replace(",", "."));
+}
+
+function formatDoseValue(n) {
+  return Object.prototype.hasOwnProperty.call(DOSE_FRACTION_LABELS, n) ? DOSE_FRACTION_LABELS[n] : String(n);
+}
+
 function dosesStepperHtml(catSlug, recipeSlug, currentDoses) {
-  const disabledDown = Number.isNaN(currentDoses) || currentDoses <= 1 ? "disabled" : "";
+  const disabledDown = Number.isNaN(currentDoses) || currentDoses <= 0.25 ? "disabled" : "";
   return `
     <button type="button" class="doses-step-btn doses-decrease-btn" data-cat="${catSlug}" data-recipe="${recipeSlug}" aria-label="Diminuir doses" title="Diminuir doses" ${disabledDown}>
       <svg viewBox="0 0 16 14" width="12" height="11"><path d="M0 0H16L8 14Z" fill="currentColor"/></svg>
@@ -497,8 +516,11 @@ function renderRecipe(catSlug, recipeSlug) {
   document.body.className = "cat-" + cat.slug;
 
   // rawRecipe.doses can be a number (built-in recipes) or a string (recipes
-  // created in-app), so compare numerically rather than with ===.
-  const atNonStandardDoses = !!rawRecipe.doses && parseInt(recipe.doses, 10) !== parseInt(rawRecipe.doses, 10);
+  // created in-app, or a fraction like "¼"), so compare via parseDoseValue
+  // rather than with === or plain parseInt (which can't read a fraction and
+  // would make this permanently true — locking editing — for any recipe
+  // whose standard doses is itself fractional).
+  const atNonStandardDoses = !!rawRecipe.doses && parseDoseValue(recipe.doses) !== parseDoseValue(rawRecipe.doses);
 
   const ingredientsEditing = isSectionEditable(cat.slug, recipe.slug, "ingredients");
   const ingredientsEditCtx = {
@@ -571,7 +593,7 @@ function renderRecipe(catSlug, recipeSlug) {
           </div>
 
           <div class="recipe-meta">
-            <span class="meta-pill meta-pill-doses"><span contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="doses">${escapeHtml(String(recipe.doses))}</span>&nbsp;doses${rawRecipe.doses ? dosesStepperHtml(cat.slug, recipe.slug, parseInt(recipe.doses, 10)) : ""}</span>
+            <span class="meta-pill meta-pill-doses"><span contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="doses">${escapeHtml(String(recipe.doses))}</span>&nbsp;doses${rawRecipe.doses ? dosesStepperHtml(cat.slug, recipe.slug, parseDoseValue(recipe.doses)) : ""}</span>
             <span class="meta-pill meta-pill-tempo"><span contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="tempo">${escapeHtml(recipe.tempo)}</span>&nbsp;de preparação${tempoFlag}</span>
           </div>
 
@@ -953,15 +975,29 @@ function rescaleRecipeIngredients(cat, recipeSlug, rawRecipe, newDoses) {
   }
 }
 
+// Bumps doses by one step. Below 1 dose the step is multiplicative instead
+// of +/-1 (¼ -> ½ -> 1 -> 2 -> 3... and back down the same way), since
+// adding/subtracting a whole dose makes no sense once you're already at a
+// fraction — ¼ + 1 isn't a meaningful "next" portion size the way ¼ x 2 is.
+// ¼ is the floor: nothing scales down smaller than that.
 function applyDosesStep(cat, recipeSlug, delta) {
   const rawRecipe = findRecipe(cat, recipeSlug);
   if (!rawRecipe || !rawRecipe.doses) return;
-  const currentDoses = parseInt(getEffectiveRecipe(cat, rawRecipe).doses, 10);
-  const base = Number.isNaN(currentDoses) ? rawRecipe.doses : currentDoses;
-  const newDoses = Math.max(1, base + delta);
+  const currentDoses = parseDoseValue(getEffectiveRecipe(cat, rawRecipe).doses);
+  const base = Number.isNaN(currentDoses) ? parseDoseValue(rawRecipe.doses) : currentDoses;
+  if (Number.isNaN(base)) return;
+
+  let newDoses;
+  if (delta > 0) {
+    newDoses = base < 1 ? base * 2 : base + 1;
+  } else if (base <= 1) {
+    newDoses = Math.max(0.25, base / 2);
+  } else {
+    newDoses = base - 1;
+  }
   if (newDoses === base) return;
 
-  saveRecipeEdit(cat, recipeSlug, "doses", String(newDoses));
+  saveRecipeEdit(cat, recipeSlug, "doses", formatDoseValue(newDoses));
   rescaleRecipeIngredients(cat, recipeSlug, rawRecipe, newDoses);
   router();
 }
@@ -1164,8 +1200,8 @@ function commitFieldEdit(el) {
   // way the up/down arrows do, not just save the raw number.
   if (field === "doses") {
     const rawRecipe = findRecipe(cat, recipe);
-    const newDoses = parseInt(value, 10);
-    if (rawRecipe && rawRecipe.doses && !Number.isNaN(newDoses) && newDoses >= 1) {
+    const newDoses = parseDoseValue(value);
+    if (rawRecipe && rawRecipe.doses && !Number.isNaN(newDoses) && newDoses > 0) {
       rescaleRecipeIngredients(cat, recipe, rawRecipe, newDoses);
     }
   }
