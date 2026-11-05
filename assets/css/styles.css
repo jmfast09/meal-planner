@@ -928,7 +928,7 @@ body.cat-compras {
 }
 
 .recipe-new-actions,
-.recipe-actions { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 16px; }
+.recipe-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-bottom: 16px; }
 
 [contenteditable][data-placeholder]:empty:before {
   content: attr(data-placeholder);
@@ -1036,7 +1036,15 @@ body.cat-compras {
 .recipe-delete-btn { background: none; border: none; color: var(--accent-dark); }
 .recipe-delete-btn:hover { opacity: 0.7; }
 
-.recipe-icon-edit-btn { background: none; color: var(--accent-dark); cursor: pointer; }
+.recipe-icon-edit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  color: var(--accent-dark);
+  cursor: pointer;
+}
+.recipe-icon-edit-btn svg { width: 24px; height: 24px; }
 .recipe-icon-edit-btn:hover { opacity: 0.7; }
 
 .planner-layout {
