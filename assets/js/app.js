@@ -477,27 +477,18 @@ function bindRecipeHistory(recipe) {
   renderList();
 }
 
-// DOSES is free text (e.g. "6", "¼", "1.5"), not strictly numeric — these
-// two keep the +/- stepper, the field-edit rescale, and the disabled-state
-// check all agreeing on what a given value actually means, instead of each
-// re-parsing it with plain parseInt (which returns NaN for "¼"/"½", silently
-// breaking the stepper for any recipe at a fractional dose count).
-const DOSE_FRACTIONS = { "¼": 0.25, "½": 0.5, "¾": 0.75 };
-const DOSE_FRACTION_LABELS = { 0.25: "¼", 0.5: "½", 0.75: "¾" };
-
+// DOSES can be a number (built-in recipes) or a string (recipes created
+// in-app), so parse it numerically rather than with === or plain parseInt
+// (which returns NaN for e.g. "1,5", permanently locking the non-standard-
+// doses comparison below for any recipe whose standard doses isn't a plain
+// integer literal).
 function parseDoseValue(value) {
   if (value === null || value === undefined) return NaN;
-  const trimmed = String(value).trim();
-  if (Object.prototype.hasOwnProperty.call(DOSE_FRACTIONS, trimmed)) return DOSE_FRACTIONS[trimmed];
-  return parseFloat(trimmed.replace(",", "."));
-}
-
-function formatDoseValue(n) {
-  return Object.prototype.hasOwnProperty.call(DOSE_FRACTION_LABELS, n) ? DOSE_FRACTION_LABELS[n] : String(n);
+  return parseFloat(String(value).trim().replace(",", "."));
 }
 
 function dosesStepperHtml(catSlug, recipeSlug, currentDoses) {
-  const disabledDown = Number.isNaN(currentDoses) || currentDoses <= 0.25 ? "disabled" : "";
+  const disabledDown = Number.isNaN(currentDoses) || currentDoses <= 1 ? "disabled" : "";
   return `
     <button type="button" class="doses-step-btn doses-decrease-btn" data-cat="${catSlug}" data-recipe="${recipeSlug}" aria-label="Diminuir doses" title="Diminuir doses" ${disabledDown}>
       <svg viewBox="0 0 16 14" width="12" height="11"><path d="M0 0H16L8 14Z" fill="currentColor"/></svg>
@@ -975,29 +966,16 @@ function rescaleRecipeIngredients(cat, recipeSlug, rawRecipe, newDoses) {
   }
 }
 
-// Bumps doses by one step. Below 1 dose the step is multiplicative instead
-// of +/-1 (¼ -> ½ -> 1 -> 2 -> 3... and back down the same way), since
-// adding/subtracting a whole dose makes no sense once you're already at a
-// fraction — ¼ + 1 isn't a meaningful "next" portion size the way ¼ x 2 is.
-// ¼ is the floor: nothing scales down smaller than that.
 function applyDosesStep(cat, recipeSlug, delta) {
   const rawRecipe = findRecipe(cat, recipeSlug);
   if (!rawRecipe || !rawRecipe.doses) return;
   const currentDoses = parseDoseValue(getEffectiveRecipe(cat, rawRecipe).doses);
   const base = Number.isNaN(currentDoses) ? parseDoseValue(rawRecipe.doses) : currentDoses;
   if (Number.isNaN(base)) return;
-
-  let newDoses;
-  if (delta > 0) {
-    newDoses = base < 1 ? base * 2 : base + 1;
-  } else if (base <= 1) {
-    newDoses = Math.max(0.25, base / 2);
-  } else {
-    newDoses = base - 1;
-  }
+  const newDoses = Math.max(1, base + delta);
   if (newDoses === base) return;
 
-  saveRecipeEdit(cat, recipeSlug, "doses", formatDoseValue(newDoses));
+  saveRecipeEdit(cat, recipeSlug, "doses", String(newDoses));
   rescaleRecipeIngredients(cat, recipeSlug, rawRecipe, newDoses);
   router();
 }
@@ -1201,7 +1179,7 @@ function commitFieldEdit(el) {
   if (field === "doses") {
     const rawRecipe = findRecipe(cat, recipe);
     const newDoses = parseDoseValue(value);
-    if (rawRecipe && rawRecipe.doses && !Number.isNaN(newDoses) && newDoses > 0) {
+    if (rawRecipe && rawRecipe.doses && !Number.isNaN(newDoses) && newDoses >= 1) {
       rescaleRecipeIngredients(cat, recipe, rawRecipe, newDoses);
     }
   }

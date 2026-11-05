@@ -173,8 +173,19 @@ function doseIngredientMeatKind(text) {
   return null;
 }
 
-const DOSE_NUM = "(\\d+\\/\\d+|\\d+(?:[.,]\\d+)?)";
+// ¼/½/¾ glyphs, optionally with a leading whole number glued on ("1½"), so
+// ingredient lines written the way a recipe naturally reads ("¼ chávena de
+// açúcar") can be scaled like any other quantity instead of being skipped.
+const DOSE_FRACTION_GLYPHS = { "¼": 0.25, "½": 0.5, "¾": 0.75 };
+const DOSE_FRACTION_GLYPH_BY_VALUE = { 0.25: "¼", 0.5: "½", 0.75: "¾" };
+
+const DOSE_NUM = "(\\d*[¼½¾]|\\d+\\/\\d+|\\d+(?:[.,]\\d+)?)";
 function parseDoseNum(raw) {
+  const glyphMatch = raw.match(/^(\d*)([¼½¾])$/);
+  if (glyphMatch) {
+    const whole = glyphMatch[1] ? parseInt(glyphMatch[1], 10) : 0;
+    return whole + DOSE_FRACTION_GLYPHS[glyphMatch[2]];
+  }
   if (raw.includes("/")) {
     const [n, d] = raw.split("/").map(Number);
     return n / d;
@@ -211,7 +222,12 @@ function parseDoseQuantity(text) {
 
 function formatDoseNumber(n) {
   const rounded = Math.round(n * 100) / 100;
-  return Number.isInteger(rounded) ? String(rounded) : String(rounded).replace(".", ",");
+  if (Number.isInteger(rounded)) return String(rounded);
+  const whole = Math.floor(rounded);
+  const frac = Math.round((rounded - whole) * 100) / 100;
+  const glyph = DOSE_FRACTION_GLYPH_BY_VALUE[frac];
+  if (glyph) return whole > 0 ? `${whole}${glyph}` : glyph;
+  return String(rounded).replace(".", ",");
 }
 
 // Rounds a scaled gram amount to a "nice" kitchen-friendly number instead of
@@ -267,11 +283,11 @@ function formatDoseQuantity(parsed, newAmount) {
   if (parsed.kind === "spoon") return `${amountStr} ${parsed.unitLabel} de ${parsed.rest}`;
   if (parsed.kind === "noun") {
     const stem = singularizeWordPt(parsed.unitLabel);
-    const noun = newAmount === 1 ? stem : pluralizePt(stem);
+    const noun = newAmount > 1 ? pluralizePt(stem) : stem;
     return `${amountStr} ${noun} de ${parsed.rest}`;
   }
-  const wasPlural = parsed.amount !== 1;
-  const isPlural = newAmount !== 1;
+  const wasPlural = parsed.amount > 1;
+  const isPlural = newAmount > 1;
   const rest = wasPlural !== isPlural ? adjustPluralityPt(parsed.rest, isPlural) : parsed.rest;
   return `${amountStr} ${rest}`;
 }
@@ -339,8 +355,13 @@ function scaleRecipeIngredientText(text, standardDoses, newDoses, recipeSlug) {
   } else if (parsed.kind === "metric") {
     // ml/l/kg: keep the exact proportional value (no coarse rounding).
     newAmount = rawScaled;
-  } else {
+  } else if (Number.isInteger(parsed.amount)) {
     newAmount = Math.max(1, Math.ceil(rawScaled));
+  } else {
+    // Original amount was already a fraction (e.g. "¼ chávena") — keep
+    // scaling it as a fraction (nearest ¼) instead of rounding up to a
+    // whole unit, so doubling/halving doses doubles/halves the fraction.
+    newAmount = Math.max(0.25, Math.round(rawScaled * 4) / 4);
   }
   return formatDoseQuantity(parsed, newAmount);
 }
