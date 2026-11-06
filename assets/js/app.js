@@ -27,7 +27,6 @@ const SAVE_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 // Preparação toggle) draws a pencil inside a rounded-square outline baked
 // into the same path, which isn't wanted here. Same stroke style as
 // TRASH_ICON (viewBox, weight, caps) so the two sit at a matching weight.
-const PENCIL_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="M15 5l4 4"/></svg>`;
 
 /* Doses-column sort toggled by the filter button, kept per category so it
    survives the full re-renders triggered by editing rows on the same page. */
@@ -62,13 +61,33 @@ function recipeIconUploadHtml() {
 /* Same upload mechanism as recipeIconUploadHtml (new-recipe form), but for
    an already-saved recipe: saves straight to Firestore on pick instead of
    staging on a wrapper for a later "save" click, matching every other
-   field on this page. */
+   field on this page. Shown next to Apagar once the recipe already has an
+   icon (see renderRecipe) — a bare camera outline, same size/placement as
+   the trash can, no solid badge circle. */
 function recipeIconEditHtml(catSlug, recipeSlug) {
   return `
     <label class="recipe-icon-edit-btn" title="Mudar ícone" aria-label="Mudar ícone">
       <input type="file" accept="image/*" class="recipe-icon-edit-input" data-cat="${catSlug}" data-recipe="${recipeSlug}" hidden />
-      ${PENCIL_ICON}
+      ${CAMERA_ICON}
     </label>
+  `;
+}
+
+/* Shown instead, in place of the dish icon itself, when the recipe has no
+   icon yet (not picked when created) — the same no-circle cloche + solid
+   camera badge as the new-recipe form's placeholder, but wired to save
+   straight to Firestore like recipeIconEditHtml above rather than staging
+   for a later save. Once an icon is picked this way, renderRecipe shows
+   the real icon and the camera moves next to Apagar instead. */
+function recipeIconPlaceholderHtml(catSlug, recipeSlug) {
+  return `
+    <div class="recipe-icon-wrap">
+      <div class="recipe-icon-preview recipe-icon new-recipe-icon-placeholder">${CLOCHE_ICON}</div>
+      <label class="recipe-icon-upload" title="Adicionar ícone" aria-label="Adicionar ícone">
+        <input type="file" accept="image/*" class="recipe-icon-edit-input" data-cat="${catSlug}" data-recipe="${recipeSlug}" hidden />
+        ${CAMERA_ICON}
+      </label>
+    </div>
   `;
 }
 
@@ -569,7 +588,7 @@ function renderRecipe(catSlug, recipeSlug) {
 
         <div class="recipe-page">
           <div class="recipe-actions">
-            ${recipeIconEditHtml(cat.slug, recipe.slug)}
+            ${(recipe.iconData || recipe.icon) ? recipeIconEditHtml(cat.slug, recipe.slug) : ""}
             <button type="button" class="planner-btn planner-btn-icon recipe-delete-btn" data-cat="${cat.slug}" data-recipe="${recipe.slug}" title="Apagar receita" aria-label="Apagar receita">
               ${TRASH_ICON}
             </button>
@@ -579,7 +598,7 @@ function renderRecipe(catSlug, recipeSlug) {
               ? `<img class="recipe-dish-icon" src="${recipe.iconData}" alt="" />`
               : recipe.icon
                 ? `<img class="recipe-dish-icon" src="assets/img/icons/recipes/${recipe.icon}.svg" alt="" />`
-                : `<div class="recipe-icon">${CLOCHE_ICON}</div>`}
+                : recipeIconPlaceholderHtml(cat.slug, recipe.slug)}
             <h1 contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="name">${escapeHtml(recipe.name)}</h1>
           </div>
 
