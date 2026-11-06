@@ -583,22 +583,23 @@ function renderRecipe(catSlug, recipeSlug) {
   const addedIngredients = getAddedIngredients(cat.slug, recipe.slug, "ingredient");
   const addedExtraIngredients = getAddedIngredients(cat.slug, recipe.slug, "ingredientExtra");
 
-  const notasHtml = recipe.notas
-    ? `
-      <div class="box notas-box" data-recipe-tab="notas">
-        <div class="box-header">Notas</div>
-        <div class="box-body" contenteditable="true" spellcheck="false" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="notas">${escapeHtml(recipe.notas)}</div>
-      </div>
-    `
-    : "";
+  // Always rendered, even with no notes yet — a note can always be added
+  // later, same as it could have been typed in at creation time (see
+  // getEffectiveRecipe, which always resolves recipe.notas for exactly
+  // this reason).
+  const notasHtml = `
+    <div class="box notas-box" data-recipe-tab="notas">
+      <div class="box-header">Notas</div>
+      <div class="box-body" contenteditable="true" spellcheck="false" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="notas" data-placeholder="Notas (opcional)">${escapeHtml(recipe.notas)}</div>
+    </div>
+  `;
 
-  // The active tab can't land on Notas if this recipe has none to show.
-  const activeMobileTab = recipeMobileTab === "notas" && !recipe.notas ? "ingredients" : recipeMobileTab;
+  const activeMobileTab = recipeMobileTab;
   const mobileTabsHtml = `
     <div class="recipe-tabs-mobile" role="tablist">
       <button type="button" class="recipe-tab-btn${activeMobileTab === "ingredients" ? " is-active" : ""}" data-tab="ingredients">Ingredientes</button>
       <button type="button" class="recipe-tab-btn${activeMobileTab === "preparacao" ? " is-active" : ""}" data-tab="preparacao">Preparação</button>
-      ${recipe.notas ? `<button type="button" class="recipe-tab-btn${activeMobileTab === "notas" ? " is-active" : ""}" data-tab="notas">Notas</button>` : ""}
+      <button type="button" class="recipe-tab-btn${activeMobileTab === "notas" ? " is-active" : ""}" data-tab="notas">Notas</button>
     </div>
   `;
 

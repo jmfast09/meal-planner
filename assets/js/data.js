@@ -121,9 +121,11 @@ function getEffectiveRecipe(catSlug, recipe) {
   if (recipe.preparacao) {
     eff.preparacao = recipe.preparacao.map((step, i) => getRecipeEdit(catSlug, slug, `prep${i}`, step));
   }
-  if (recipe.notas !== undefined) {
-    eff.notas = getRecipeEdit(catSlug, slug, "notas", recipe.notas);
-  }
+  // Always resolved, even for a recipe saved with no notes at creation —
+  // the Notas box stays available afterwards (see renderRecipe) so a note
+  // can still be added later, and this is what lets that saved edit be
+  // read back.
+  eff.notas = getRecipeEdit(catSlug, slug, "notas", recipe.notas || "");
   eff.iconData = getRecipeEdit(catSlug, slug, "iconData", recipe.iconData);
   return eff;
 }
