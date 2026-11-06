@@ -483,7 +483,7 @@ body.cat-compras {
 .recipe-icon {
   width: 140px;
   height: 140px;
-  margin: 0 auto 14px;
+  margin: 0 auto;
   border: 1.5px solid var(--accent);
   border-radius: 50%;
   display: flex;
@@ -495,10 +495,10 @@ body.cat-compras {
   display: block;
   width: 140px;
   height: 140px;
-  margin: 0 auto 10px;
+  margin: 0 auto;
   object-fit: contain;
 }
-.recipe-icon-wrap { position: relative; display: inline-block; margin-bottom: 14px; }
+.recipe-icon-wrap { position: relative; display: inline-block; }
 .recipe-icon-wrap .recipe-icon-preview.recipe-icon,
 .recipe-icon-wrap .recipe-icon-preview.recipe-dish-icon { margin: 0; }
 .new-recipe-icon-placeholder { border: none; }
