@@ -403,14 +403,16 @@ function ingredientLineHtml(text, field, editCtx, placeholder) {
 // visible instead of looking like nothing happened (see the "+" click
 // handler below, which also scrolls it into view).
 function ingredientListHtml(items, addedItems, editCtx) {
-  const baseLis = items.map((i, idx) => ingredientLineHtml(i, editCtx && `${editCtx.prefix}${idx}`, editCtx)).join("");
-  const addedLis = (addedItems || [])
-    .map((i, idx) => ingredientLineHtml(i, editCtx && `${editCtx.prefix}Added${idx}`, editCtx, "Novo ingrediente…"))
+  const visible = editCtx
+    ? visibleIngredientItems(editCtx.cat, editCtx.recipe, editCtx.prefix, items, addedItems)
+    : items.map((text) => ({ field: null, text, isAdded: false }));
+  const lis = visible
+    .map(({ field, text, isAdded }) => ingredientLineHtml(text, field, editCtx, isAdded ? "Novo ingrediente…" : undefined))
     .join("");
   const addBtn = editCtx && !editCtx.locked
     ? `<button type="button" class="ingredient-add-btn" data-cat="${editCtx.cat}" data-recipe="${editCtx.recipe}" data-prefix="${editCtx.prefix}" aria-label="Adicionar ingrediente" title="Adicionar ingrediente">+</button>`
     : "";
-  return `<ul class="ingredient-list">${baseLis}${addedLis}</ul>${addBtn}`;
+  return `<ul class="ingredient-list">${lis}</ul>${addBtn}`;
 }
 
 // Steps appended via the "+" button, same idea as ingredients' Added
@@ -984,6 +986,24 @@ function getAddedIngredients(cat, recipeSlug, prefix) {
   return items;
 }
 
+// An ingredient (base or added) is "removed" by flagging it "{field}Deleted"
+// = "1" rather than resizing anything — same idea as prep steps (see
+// visiblePrepSteps): a built-in recipe's ingredients array is fixed data.js
+// content with nothing to persist a resize into, and even for an in-app
+// recipe, re-indexing every later ingredient's saved/scaled fields on every
+// delete is exactly the "shift and orphan" problem the comment above
+// already flags for Added items. A flag sidesteps that for base ingredients
+// too, so deleting works at any position, built-in or in-app alike. Returns
+// the combined base+added list in display order, filtered to what's
+// actually visible — the one place both rendering and the Backspace/Delete
+// handler agree on what "the ingredients" currently are.
+function visibleIngredientItems(catSlug, recipeSlug, prefix, baseItems, addedItems) {
+  const all = (baseItems || [])
+    .map((text, i) => ({ field: `${prefix}${i}`, text, isAdded: false }))
+    .concat((addedItems || []).map((text, k) => ({ field: `${prefix}Added${k}`, text, isAdded: true })));
+  return all.filter(({ field }) => getRecipeEdit(catSlug, recipeSlug, `${field}Deleted`, "") !== "1");
+}
+
 function rescaleAddedIngredients(cat, recipeSlug, prefix, standardDoses, newDoses) {
   const count = getAddedIngredientCount(cat, recipeSlug, prefix);
   for (let k = 0; k < count; k++) {
@@ -1210,26 +1230,15 @@ function commitFieldEdit(el) {
 
   // A "+"-added ingredient can only be edited at standard doses (same lock
   // as any other ingredient), so every edit directly corrects its baseline —
-  // no separate non-standard-dose-override case needed here.
+  // no separate non-standard-dose-override case needed here. Leaving one
+  // blank no longer auto-drops it on blur (that only ever handled the last
+  // line anyway) — Backspace/Delete on an empty line removes it explicitly,
+  // the same way as any other ingredient, added or not.
   const addedMatch = /^(ingredientExtra|ingredient)Added(\d+)$/.exec(field);
   if (addedMatch) {
     const prefix = addedMatch[1];
     const k = parseInt(addedMatch[2], 10);
-    if (!value) {
-      // Left blank on a deliberate blur: drop it instead of leaving a
-      // permanent empty line, but only if it's the last one — removing an
-      // earlier one would shift every later index and orphan their saved
-      // fields. (commitFieldEdit only runs from a real focusout — see
-      // flushActiveFieldEdit below, which deliberately does NOT call this;
-      // see also firebase-sync.js's isEditingAnyField() guard, which stops
-      // an onSnapshot echo of this very row's own write from re-rendering
-      // the page — and thus blurring this still-blank, still-focused row —
-      // out from under the user before they've had a chance to type.)
-      const count = getAddedIngredientCount(cat, recipe, prefix);
-      if (k === count - 1) saveRecipeEdit(cat, recipe, `${prefix}AddedCount`, String(count - 1));
-    } else {
-      saveRecipeEdit(cat, recipe, `${prefix}AddedStandard${k}`, value);
-    }
+    saveRecipeEdit(cat, recipe, `${prefix}AddedStandard${k}`, value);
   }
 
   // Typing a new doses number directly should rescale ingredients the same
@@ -1365,6 +1374,44 @@ document.addEventListener("keydown", (e) => {
   const prevField = pos > 0 ? visible[pos - 1].field : visible[1] && visible[1].field;
   requestAnimationFrame(() => {
     const prevEl = prevField ? document.querySelector(`.prep-step-text[data-field="${prevField}"]`) : null;
+    if (prevEl) placeCursorAtEnd(prevEl);
+  });
+});
+
+// Backspace/Delete on an empty ingredient line removes it, base or added,
+// main list or the "extra" box, same mechanism as prep steps above (see
+// visibleIngredientItems). A locked line (editing off, or non-standard
+// doses) has no data-field at all (see ingredientLineHtml), so this can
+// only ever reach an actually-editable line.
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Backspace" && e.key !== "Delete") return;
+  const el = e.target.closest("li[data-field]");
+  if (!el || el.textContent.trim() !== "") return;
+  const field = el.dataset.field || "";
+  if (!/^ingredient(Extra)?(Added)?\d+$/.test(field)) return;
+  const { cat, recipe } = el.dataset;
+  if (!cat || !recipe) return;
+  const rawRecipe = findRecipe(cat, recipe);
+  if (!rawRecipe) return;
+
+  const prefix = field.startsWith("ingredientExtra") ? "ingredientExtra" : "ingredient";
+  const eff = getEffectiveRecipe(cat, rawRecipe);
+  const baseItems = prefix === "ingredientExtra"
+    ? (eff.ingredientsExtra ? eff.ingredientsExtra.items : [])
+    : (eff.ingredients || []);
+  const addedItems = getAddedIngredients(cat, recipe, prefix);
+  const visible = visibleIngredientItems(cat, recipe, prefix, baseItems, addedItems);
+  if (visible.length <= 1) return; // always keep at least one ingredient line
+  const pos = visible.findIndex((s) => s.field === field);
+  if (pos === -1) return;
+
+  e.preventDefault();
+  saveRecipeEdit(cat, recipe, `${field}Deleted`, "1");
+  router();
+
+  const prevField = pos > 0 ? visible[pos - 1].field : visible[1] && visible[1].field;
+  requestAnimationFrame(() => {
+    const prevEl = prevField ? document.querySelector(`li[data-field="${prevField}"]`) : null;
     if (prevEl) placeCursorAtEnd(prevEl);
   });
 });
