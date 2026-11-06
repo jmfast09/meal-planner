@@ -481,8 +481,8 @@ body.cat-compras {
   margin-bottom: 26px;
 }
 .recipe-icon {
-  width: 84px;
-  height: 84px;
+  width: 140px;
+  height: 140px;
   margin: 0 auto 14px;
   border: 1.5px solid var(--accent);
   border-radius: 50%;
@@ -493,8 +493,8 @@ body.cat-compras {
 }
 .recipe-dish-icon {
   display: block;
-  width: 110px;
-  height: 110px;
+  width: 140px;
+  height: 140px;
   margin: 0 auto 10px;
   object-fit: contain;
 }
