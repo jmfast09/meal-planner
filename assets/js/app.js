@@ -446,6 +446,30 @@ function prepStorageKey(catSlug, recipeSlug, stepIndex) {
   return `mealplanner:prep:${catSlug}:${recipeSlug}:${stepIndex}`;
 }
 
+/* Backspace/Delete on an empty prep step removes it, like the new-recipe
+   form already does — but only for a recipe created in-app: its
+   preparacao array lives in window.__newRecipesCache and can be rewritten
+   and re-synced to Firestore, unlike a built-in recipe's array, which is
+   fixed data.js content with nothing to persist a resize into. Returns
+   false (and does nothing) for a built-in recipe, so the caller knows not
+   to treat the keypress as handled. */
+function removePrepStep(catSlug, recipeSlug, index) {
+  const cache = window.__newRecipesCache;
+  const stored = cache && cache[catSlug] && cache[catSlug][recipeSlug];
+  if (!stored || !Array.isArray(stored.preparacao) || stored.preparacao.length <= 1) return false;
+
+  // Resolve every step's current (possibly edited) text before splicing, so
+  // per-index "prep{i}" overrides get re-pointed at the shifted content
+  // instead of leaking stale pre-shift text into their new position.
+  const resolved = stored.preparacao.map((step, i) => getRecipeEdit(catSlug, recipeSlug, `prep${i}`, step));
+  resolved.splice(index, 1);
+
+  stored.preparacao = resolved;
+  if (window.saveNewRecipeRemote) window.saveNewRecipeRemote(catSlug, stored);
+  resolved.forEach((text, i) => saveRecipeEdit(catSlug, recipeSlug, `prep${i}`, text));
+  return true;
+}
+
 function recipeHistorySectionHtml(recipe) {
   const matches = plannerFindWeeksForDish(recipe.name);
   const years = Array.from(new Set(matches.filter((m) => m.week).map((m) => m.week.slice(0, 4)))).sort().reverse();
@@ -1273,6 +1297,39 @@ document.addEventListener("keydown", (e) => {
     e.preventDefault();
     el.blur();
   }
+});
+
+// Backspace/Delete on an empty step in a saved recipe's Preparação
+// checklist removes it, matching the new-recipe form's own list. Scoped to
+// .prep-step-text[data-field] so it never touches the new-recipe form
+// (whose steps have no data-field) or any other singleline field.
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Backspace" && e.key !== "Delete") return;
+  const el = e.target.closest(".prep-step-text[data-field]");
+  if (!el || el.textContent.trim() !== "") return;
+  const m = /^prep(\d+)$/.exec(el.dataset.field || "");
+  if (!m) return;
+  const { cat, recipe } = el.dataset;
+  if (!cat || !recipe) return;
+
+  e.preventDefault();
+  const index = parseInt(m[1], 10);
+  // Blurring first (synchronous: the global focusout listener above runs
+  // and commits straight away) flushes this field's own harmless "" commit
+  // before removePrepStep's shift-rewrite runs, instead of after — firing
+  // after would silently stomp the just-shifted text back to "". That same
+  // focusout listener also queues its own requestAnimationFrame(router), so
+  // our own focus restoration is deferred the same way, to land on the
+  // frame after that re-render rather than get wiped out by it.
+  el.blur();
+  if (!removePrepStep(cat, recipe, index)) return;
+  router();
+
+  const prevIndex = Math.max(0, index - 1);
+  requestAnimationFrame(() => {
+    const prevEl = document.querySelector(`.prep-step-text[data-field="prep${prevIndex}"]`);
+    if (prevEl) placeCursorAtEnd(prevEl);
+  });
 });
 
 window.addEventListener("hashchange", router);
