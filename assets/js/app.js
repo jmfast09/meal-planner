@@ -413,15 +413,51 @@ function ingredientListHtml(items, addedItems, editCtx) {
   return `<ul class="ingredient-list">${baseLis}${addedLis}</ul>${addBtn}`;
 }
 
+// Steps appended via the "+" button, same idea as ingredients' Added
+// mechanism (see getAddedIngredientCount below): "prepAddedCount" plus one
+// "prepAdded{k}" field per line, never touching the recipe's own fixed-
+// length preparacao array. Works the same for built-in and in-app-created
+// recipes, since it's pure recipeEdits overlay, no base array involved.
+function getAddedPrepCount(catSlug, recipeSlug) {
+  return parseInt(getRecipeEdit(catSlug, recipeSlug, "prepAddedCount", "0"), 10) || 0;
+}
+function getAddedPrepSteps(catSlug, recipeSlug) {
+  const count = getAddedPrepCount(catSlug, recipeSlug);
+  const items = [];
+  for (let k = 0; k < count; k++) items.push(getRecipeEdit(catSlug, recipeSlug, `prepAdded${k}`, ""));
+  return items;
+}
+
+// A step (base or added) is "removed" by flagging it "{field}Deleted" = "1"
+// rather than actually shrinking any array — the base preparacao array is
+// fixed-length shipped data.js content for a built-in recipe (nothing to
+// resize), and even for an in-app-created recipe, re-indexing every later
+// step's saved field on every delete is exactly the "shift and orphan"
+// problem the Added-items comment below warns about. A flag sidesteps that
+// entirely: nothing ever moves, so it works identically for every recipe
+// and at any position, not just the last line. Returns the combined
+// base+added list in display order, already filtered down to what's
+// actually visible — the one place both rendering and the Backspace/Delete
+// handler agree on what "the steps" currently are.
+function visiblePrepSteps(catSlug, recipeSlug, baseSteps) {
+  const addedSteps = getAddedPrepSteps(catSlug, recipeSlug);
+  const all = baseSteps
+    .map((step, i) => ({ field: `prep${i}`, text: step, isAdded: false }))
+    .concat(addedSteps.map((step, k) => ({ field: `prepAdded${k}`, text: step, isAdded: true })));
+  return all.filter(({ field }) => getRecipeEdit(catSlug, recipeSlug, `${field}Deleted`, "") !== "1");
+}
+
 function prepChecklistHtml(catSlug, recipeSlug, steps, editable) {
-  const items = steps.map((step, i) => {
-    const key = prepStorageKey(catSlug, recipeSlug, i);
+  const visible = visiblePrepSteps(catSlug, recipeSlug, steps);
+  const items = visible.map(({ field, text, isAdded }, i) => {
+    const key = prepStorageKey(catSlug, recipeSlug, field);
     const checked = localStorage.getItem(key) === "1" ? "checked" : "";
+    const placeholderAttr = isAdded ? ` data-placeholder="Novo passo…"` : "";
     // The checklist itself (checkboxes) always works regardless of edit
     // mode — only the step text is gated behind the pencil/save button.
     const textHtml = editable
-      ? `<span class="prep-step-text" contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${catSlug}" data-recipe="${recipeSlug}" data-field="prep${i}">${escapeHtml(step)}</span>`
-      : `<span class="prep-step-text">${escapeHtml(step)}</span>`;
+      ? `<span class="prep-step-text" contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${catSlug}" data-recipe="${recipeSlug}" data-field="${field}"${placeholderAttr}>${escapeHtml(text)}</span>`
+      : `<span class="prep-step-text">${escapeHtml(text)}</span>`;
     return `
       <li>
         <div class="prep-step">
@@ -434,40 +470,19 @@ function prepChecklistHtml(catSlug, recipeSlug, steps, editable) {
       </li>
     `;
   }).join("");
+  const addBtn = editable
+    ? `<button type="button" class="prep-add-btn" data-cat="${catSlug}" data-recipe="${recipeSlug}" aria-label="Adicionar passo" title="Adicionar passo">+</button>`
+    : "";
   const unselectBtn = `
     <button type="button" class="prep-unselect-all" aria-label="Desmarcar tudo" title="Desmarcar tudo">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>
     </button>
   `;
-  return `<ul class="prep-list">${items}</ul>${unselectBtn}`;
+  return `<ul class="prep-list">${items}</ul><div class="prep-list-actions">${addBtn}${unselectBtn}</div>`;
 }
 
-function prepStorageKey(catSlug, recipeSlug, stepIndex) {
-  return `mealplanner:prep:${catSlug}:${recipeSlug}:${stepIndex}`;
-}
-
-/* Backspace/Delete on an empty prep step removes it, like the new-recipe
-   form already does — but only for a recipe created in-app: its
-   preparacao array lives in window.__newRecipesCache and can be rewritten
-   and re-synced to Firestore, unlike a built-in recipe's array, which is
-   fixed data.js content with nothing to persist a resize into. Returns
-   false (and does nothing) for a built-in recipe, so the caller knows not
-   to treat the keypress as handled. */
-function removePrepStep(catSlug, recipeSlug, index) {
-  const cache = window.__newRecipesCache;
-  const stored = cache && cache[catSlug] && cache[catSlug][recipeSlug];
-  if (!stored || !Array.isArray(stored.preparacao) || stored.preparacao.length <= 1) return false;
-
-  // Resolve every step's current (possibly edited) text before splicing, so
-  // per-index "prep{i}" overrides get re-pointed at the shifted content
-  // instead of leaking stale pre-shift text into their new position.
-  const resolved = stored.preparacao.map((step, i) => getRecipeEdit(catSlug, recipeSlug, `prep${i}`, step));
-  resolved.splice(index, 1);
-
-  stored.preparacao = resolved;
-  if (window.saveNewRecipeRemote) window.saveNewRecipeRemote(catSlug, stored);
-  resolved.forEach((text, i) => saveRecipeEdit(catSlug, recipeSlug, `prep${i}`, text));
-  return true;
+function prepStorageKey(catSlug, recipeSlug, field) {
+  return `mealplanner:prep:${catSlug}:${recipeSlug}:${field}`;
 }
 
 function recipeHistorySectionHtml(recipe) {
@@ -1299,35 +1314,57 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+// Delegated listener: appends a new empty, editable prep step, same UX as
+// the ingredient "+" button (scroll it into view, focus it on the next
+// tick so a button's own default focus doesn't steal it back).
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".prep-add-btn");
+  if (!btn) return;
+  const { cat, recipe } = btn.dataset;
+  const count = getAddedPrepCount(cat, recipe);
+  saveRecipeEdit(cat, recipe, "prepAddedCount", String(count + 1));
+  router();
+  const el = document.querySelector(`[data-field="prepAdded${count}"]`);
+  if (!el) return;
+  el.scrollIntoView({ block: "center", behavior: "smooth" });
+  setTimeout(() => el.focus(), 0);
+});
+
 // Backspace/Delete on an empty step in a saved recipe's Preparação
-// checklist removes it, matching the new-recipe form's own list. Scoped to
-// .prep-step-text[data-field] so it never touches the new-recipe form
-// (whose steps have no data-field) or any other singleline field.
+// checklist removes it (see visiblePrepSteps above for how "removed" works
+// without resizing anything), matching the new-recipe form's own list.
+// Scoped to .prep-step-text[data-field] so it never touches the
+// new-recipe form (whose steps have no data-field) or any other
+// singleline field.
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Backspace" && e.key !== "Delete") return;
   const el = e.target.closest(".prep-step-text[data-field]");
   if (!el || el.textContent.trim() !== "") return;
-  const m = /^prep(\d+)$/.exec(el.dataset.field || "");
-  if (!m) return;
+  const field = el.dataset.field || "";
+  if (!/^(prep\d+|prepAdded\d+)$/.test(field)) return;
   const { cat, recipe } = el.dataset;
   if (!cat || !recipe) return;
+  const rawRecipe = findRecipe(cat, recipe);
+  if (!rawRecipe) return;
+
+  const baseSteps = getEffectiveRecipe(cat, rawRecipe).preparacao || [];
+  const visible = visiblePrepSteps(cat, recipe, baseSteps);
+  if (visible.length <= 1) return; // always keep at least one step line
+  const pos = visible.findIndex((s) => s.field === field);
+  if (pos === -1) return;
 
   e.preventDefault();
-  const index = parseInt(m[1], 10);
-  // Blurring first (synchronous: the global focusout listener above runs
-  // and commits straight away) flushes this field's own harmless "" commit
-  // before removePrepStep's shift-rewrite runs, instead of after — firing
-  // after would silently stomp the just-shifted text back to "". That same
-  // focusout listener also queues its own requestAnimationFrame(router), so
-  // our own focus restoration is deferred the same way, to land on the
-  // frame after that re-render rather than get wiped out by it.
-  el.blur();
-  if (!removePrepStep(cat, recipe, index)) return;
+  saveRecipeEdit(cat, recipe, `${field}Deleted`, "1");
   router();
 
-  const prevIndex = Math.max(0, index - 1);
+  // Deferred: this field losing focus as part of router()'s DOM replacement
+  // also triggers the global focusout listener above, which queues its own
+  // requestAnimationFrame(router) re-render. Restoring focus the same way
+  // (instead of synchronously, right now) makes sure ours is the one that
+  // actually sticks — it runs after that re-render, not before it.
+  const prevField = pos > 0 ? visible[pos - 1].field : visible[1] && visible[1].field;
   requestAnimationFrame(() => {
-    const prevEl = document.querySelector(`.prep-step-text[data-field="prep${prevIndex}"]`);
+    const prevEl = prevField ? document.querySelector(`.prep-step-text[data-field="${prevField}"]`) : null;
     if (prevEl) placeCursorAtEnd(prevEl);
   });
 });

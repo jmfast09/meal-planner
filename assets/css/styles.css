@@ -649,11 +649,27 @@ body.cat-compras {
   align-items: center;
   justify-content: space-between;
 }
+.prep-list-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+.prep-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: none;
+  color: var(--accent-dark);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.prep-add-btn:hover { opacity: 0.75; }
 .prep-unselect-all {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 8px 0 0 auto;
+  margin-left: auto;
   width: 26px;
   height: 26px;
   border: none;
