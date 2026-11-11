@@ -365,6 +365,21 @@ body.cat-compras {
   margin-right: auto;
 }
 .list-add-btn:hover { opacity: 0.85; }
+button.list-add-btn { border: none; cursor: pointer; font-family: inherit; }
+
+.simple-list-table .simple-list-row-actions { width: 28px; text-align: right; }
+.simple-list-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: var(--line);
+  cursor: pointer;
+  padding: 0;
+}
+.simple-list-delete-btn:hover { color: var(--accent-dark); }
+.simple-list-delete-btn svg { width: 15px; height: 15px; }
 
 .category-search {
   flex: 1;

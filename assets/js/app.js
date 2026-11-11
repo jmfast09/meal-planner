@@ -200,11 +200,12 @@ function renderHome() {
   `;
 }
 
-function listHeaderHtml(label, addHref) {
+function listHeaderHtml(label, addHref, extraHtml) {
   return `
     <div class="list-header">
       <span class="list-pill">${escapeHtml(label)}</span>
       ${addHref ? `<a class="list-add-btn" href="${addHref}" aria-label="Criar nova receita" title="Criar nova receita">+</a>` : ""}
+      ${extraHtml || ""}
       <input type="text" class="category-search" placeholder="Procurar..." autocomplete="off" />
     </div>
   `;
@@ -265,23 +266,67 @@ function renderCategoryList(cat) {
   `;
 }
 
+// Items added via the "+" button in a simple-list category (e.g. Easy
+// meals) — stored the same way as a recipe's own Added ingredients/steps:
+// "addedCount" plus two fields per row, under a fixed "__list" sentinel in
+// place of a recipe slug (there's no recipe here to hang them off), and
+// "removed" by flagging "{field}Deleted" rather than resizing anything —
+// same reasoning as everywhere else this applies. Lets a user-added row be
+// typed into, edited and removed, while the static, shipped rows stay
+// read-only shared data.
+function getAddedSimpleListCount(catSlug) {
+  return parseInt(getRecipeEdit(catSlug, "__list", "addedCount", "0"), 10) || 0;
+}
+function getAddedSimpleListItems(catSlug) {
+  const count = getAddedSimpleListCount(catSlug);
+  const items = [];
+  for (let k = 0; k < count; k++) {
+    const field = `added${k}`;
+    if (getRecipeEdit(catSlug, "__list", `${field}Deleted`, "") === "1") continue;
+    items.push({
+      field,
+      name: getRecipeEdit(catSlug, "__list", `${field}Name`, ""),
+      value: getRecipeEdit(catSlug, "__list", `${field}Value`, ""),
+      isAdded: true,
+    });
+  }
+  return items;
+}
+
 function renderSimpleList(cat) {
   const data = SIMPLE_LISTS[cat.slug];
-  const items = [...data.items].sort((a, b) => a.name.localeCompare(b.name, "pt"));
-  const rows = items.map((it) => `
-    <tr data-search-name="${escapeHtml(it.name)}">
-      <td>${escapeHtml(it.name)}</td>
-      <td>${escapeHtml(it.value)}</td>
-    </tr>
-  `).join("");
+  const staticItems = data.items.map((it) => ({ ...it, isAdded: false, field: null }));
+  const items = [...staticItems, ...getAddedSimpleListItems(cat.slug)]
+    .sort((a, b) => a.name.localeCompare(b.name, "pt"));
+
+  const rows = items.map((it) => {
+    const nameCell = it.isAdded
+      ? `<span contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="__list" data-field="${it.field}Name" data-placeholder="Nome">${escapeHtml(it.name)}</span>`
+      : escapeHtml(it.name);
+    const valueCell = it.isAdded
+      ? `<span contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="__list" data-field="${it.field}Value" data-placeholder="—">${escapeHtml(it.value)}</span>`
+      : escapeHtml(it.value);
+    const deleteCell = it.isAdded
+      ? `<button type="button" class="simple-list-delete-btn" data-cat="${cat.slug}" data-field="${it.field}" aria-label="Remover" title="Remover">${TRASH_ICON}</button>`
+      : "";
+    return `
+      <tr data-search-name="${escapeHtml(it.name)}">
+        <td>${nameCell}</td>
+        <td>${valueCell}</td>
+        <td class="simple-list-row-actions">${deleteCell}</td>
+      </tr>
+    `;
+  }).join("");
+
+  const addBtn = `<button type="button" class="list-add-btn simple-list-add-btn" data-cat="${cat.slug}" aria-label="Adicionar" title="Adicionar">+</button>`;
 
   return `
     <div class="wavy-wrap">
       <div class="wavy-frame">
         <div class="wavy-inner">
-          ${listHeaderHtml(cat.listLabel || "Lista de Receitas")}
-          <table class="recipe-table">
-            <thead><tr><th>${data.columns[0]}</th><th>${data.columns[1]}</th></tr></thead>
+          ${listHeaderHtml(cat.listLabel || "Lista de Receitas", null, addBtn)}
+          <table class="recipe-table simple-list-table">
+            <thead><tr><th>${data.columns[0]}</th><th>${data.columns[1]}</th><th></th></tr></thead>
             <tbody>${rows}</tbody>
           </table>
         </div>
@@ -1335,6 +1380,37 @@ document.addEventListener("click", (e) => {
   // the next tick, once the browser's own default click handling has
   // settled, makes it the last word.
   setTimeout(() => el.focus(), 0);
+});
+
+// Delegated listener: appends a new empty, editable row to a simple-list
+// category (e.g. Easy meals), same "+" UX as the ingredient/prep one above.
+// It's sorted in with the rest on every render, so it settles into its
+// alphabetical place as soon as a name is typed — "entering the list
+// normally" rather than staying pinned to the top or bottom.
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".simple-list-add-btn");
+  if (!btn) return;
+  const cat = btn.dataset.cat;
+  const count = getAddedSimpleListCount(cat);
+  const field = `added${count}`;
+  saveRecipeEdit(cat, "__list", `${field}Name`, "");
+  saveRecipeEdit(cat, "__list", `${field}Value`, "");
+  saveRecipeEdit(cat, "__list", "addedCount", String(count + 1));
+  router();
+  const el = document.querySelector(`[data-field="${field}Name"]`);
+  if (!el) return;
+  el.scrollIntoView({ block: "center", behavior: "smooth" });
+  setTimeout(() => el.focus(), 0);
+});
+
+// Delegated listener: removes a user-added simple-list row (see
+// getAddedSimpleListItems — flagged "{field}Deleted", not resized).
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".simple-list-delete-btn");
+  if (!btn) return;
+  const { cat, field } = btn.dataset;
+  saveRecipeEdit(cat, "__list", `${field}Deleted`, "1");
+  router();
 });
 
 // Delegated listener: toggles a box between read-only and editable — every
