@@ -372,8 +372,15 @@ function editToggleBtnHtml(catSlug, recipeSlug, section, editing, disabled) {
   `;
 }
 
-function ingredientLineHtml(text, field, editCtx, placeholder) {
-  if (!editCtx) return `<li>${escapeHtml(text)}</li>`;
+// A line flagged "{field}IsTitle" renders like Lasanha's "Béchamel" used to
+// be possible only via the separate, single-use ingredientsExtra title —
+// styled as a section heading instead of a quantity line, and (see
+// rescaleRecipeIngredients) never touched by dose scaling. The toggle
+// button lives as a sibling of the editable span rather than inside it, so
+// its own label never ends up folded into the saved ingredient text.
+function ingredientLineHtml(text, field, editCtx, placeholder, isTitle) {
+  const titleClass = isTitle ? " ingredient-title-line" : "";
+  if (!editCtx) return `<li${isTitle ? ` class="ingredient-title-line"` : ""}>${escapeHtml(text)}</li>`;
   // Editing is locked while the recipe is showing a scaled (non-standard)
   // dose count (a scaled line is recomputed from the standard baseline
   // every time doses change, so an edit made here would look saved but
@@ -388,10 +395,16 @@ function ingredientLineHtml(text, field, editCtx, placeholder) {
     const title = editCtx.lockedReason === "doses"
       ? "Volta às doses standard para editar ingredientes"
       : "Clica no lápis para editar";
-    return `<li class="ingredient-locked" title="${title}">${escapeHtml(text)}</li>`;
+    return `<li class="ingredient-locked${titleClass}" title="${title}">${escapeHtml(text)}</li>`;
   }
   const placeholderAttr = placeholder ? ` data-placeholder="${escapeHtml(placeholder)}"` : "";
-  return `<li contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${editCtx.cat}" data-recipe="${editCtx.recipe}" data-field="${field}"${placeholderAttr}>${escapeHtml(text)}</li>`;
+  const toggleTitle = isTitle ? "Tornar num ingrediente normal" : "Tornar em título";
+  return `
+    <li${isTitle ? ` class="ingredient-title-line"` : ""}>
+      <button type="button" class="ingredient-title-toggle${isTitle ? " is-active" : ""}" data-cat="${editCtx.cat}" data-recipe="${editCtx.recipe}" data-toggle-field="${field}" aria-label="${toggleTitle}" title="${toggleTitle}">Aa</button>
+      <span contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${editCtx.cat}" data-recipe="${editCtx.recipe}" data-field="${field}"${placeholderAttr}>${escapeHtml(text)}</span>
+    </li>
+  `;
 }
 
 // addedItems are ingredients the user appended via the "+" button — stored
@@ -407,7 +420,10 @@ function ingredientListHtml(items, addedItems, editCtx) {
     ? visibleIngredientItems(editCtx.cat, editCtx.recipe, editCtx.prefix, items, addedItems)
     : items.map((text) => ({ field: null, text, isAdded: false }));
   const lis = visible
-    .map(({ field, text, isAdded }) => ingredientLineHtml(text, field, editCtx, isAdded ? "Novo ingrediente…" : undefined))
+    .map(({ field, text, isAdded }) => {
+      const isTitle = editCtx && field && getRecipeEdit(editCtx.cat, editCtx.recipe, `${field}IsTitle`, "") === "1";
+      return ingredientLineHtml(text, field, editCtx, isAdded ? "Novo ingrediente…" : undefined, isTitle);
+    })
     .join("");
   const addBtn = editCtx && !editCtx.locked
     ? `<button type="button" class="ingredient-add-btn" data-cat="${editCtx.cat}" data-recipe="${editCtx.recipe}" data-prefix="${editCtx.prefix}" aria-label="Adicionar ingrediente" title="Adicionar ingrediente">+</button>`
@@ -1005,9 +1021,17 @@ function visibleIngredientItems(catSlug, recipeSlug, prefix, baseItems, addedIte
   return all.filter(({ field }) => getRecipeEdit(catSlug, recipeSlug, `${field}Deleted`, "") !== "1");
 }
 
+// A line flagged as a section heading (see ingredientLineHtml) is never a
+// quantity to scale — its text is edited and saved directly, like
+// ingredientsExtraTitle already was, so dose changes must leave it alone.
+function isIngredientTitleLine(cat, recipeSlug, field) {
+  return getRecipeEdit(cat, recipeSlug, `${field}IsTitle`, "") === "1";
+}
+
 function rescaleAddedIngredients(cat, recipeSlug, prefix, standardDoses, newDoses) {
   const count = getAddedIngredientCount(cat, recipeSlug, prefix);
   for (let k = 0; k < count; k++) {
+    if (isIngredientTitleLine(cat, recipeSlug, `${prefix}Added${k}`)) continue;
     const standardText = getRecipeEdit(cat, recipeSlug, `${prefix}AddedStandard${k}`, "");
     saveRecipeEdit(cat, recipeSlug, `${prefix}Added${k}`, scaleRecipeIngredientText(standardText, standardDoses, newDoses, recipeSlug));
   }
@@ -1016,6 +1040,7 @@ function rescaleAddedIngredients(cat, recipeSlug, prefix, standardDoses, newDose
 function rescaleRecipeIngredients(cat, recipeSlug, rawRecipe, newDoses) {
   const standardDoses = rawRecipe.doses;
   (rawRecipe.ingredients || []).forEach((ing, i) => {
+    if (isIngredientTitleLine(cat, recipeSlug, `ingredient${i}`)) return;
     // A manual correction saved while viewing standard doses (see the
     // focusout handler below) replaces the shipped text as the baseline.
     const standardText = getRecipeEdit(cat, recipeSlug, `ingredientStandard${i}`, ing);
@@ -1033,6 +1058,7 @@ function rescaleRecipeIngredients(cat, recipeSlug, rawRecipe, newDoses) {
   rescaleAddedIngredients(cat, recipeSlug, "ingredient", standardDoses, newDoses);
   if (rawRecipe.ingredientsExtra) {
     rawRecipe.ingredientsExtra.items.forEach((ing, i) => {
+      if (isIngredientTitleLine(cat, recipeSlug, `ingredientExtra${i}`)) return;
       const standardText = getRecipeEdit(cat, recipeSlug, `ingredientExtraStandard${i}`, ing);
       const manualOverride = getRecipeEdit(cat, recipeSlug, `ingredientExtraDoseOverride${i}_${newDoses}`, undefined);
       const staticOverridesForIngredient = rawRecipe.ingredientsExtraDoseOverrides && rawRecipe.ingredientsExtraDoseOverrides[i];
@@ -1383,10 +1409,12 @@ document.addEventListener("keydown", (e) => {
 // main list or the "extra" box, same mechanism as prep steps above (see
 // visibleIngredientItems). A locked line (editing off, or non-standard
 // doses) has no data-field at all (see ingredientLineHtml), so this can
-// only ever reach an actually-editable line.
+// only ever reach an actually-editable line. The editable part is a span
+// nested in the <li> (next to the title-toggle button, see
+// ingredientLineHtml), not the <li> itself.
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Backspace" && e.key !== "Delete") return;
-  const el = e.target.closest("li[data-field]");
+  const el = e.target.closest(".ingredient-list li span[data-field]");
   if (!el || el.textContent.trim() !== "") return;
   const field = el.dataset.field || "";
   if (!/^ingredient(Extra)?(Added)?\d+$/.test(field)) return;
@@ -1412,9 +1440,22 @@ document.addEventListener("keydown", (e) => {
 
   const prevField = pos > 0 ? visible[pos - 1].field : visible[1] && visible[1].field;
   requestAnimationFrame(() => {
-    const prevEl = prevField ? document.querySelector(`li[data-field="${prevField}"]`) : null;
+    const prevEl = prevField ? document.querySelector(`.ingredient-list li span[data-field="${prevField}"]`) : null;
     if (prevEl) placeCursorAtEnd(prevEl);
   });
+});
+
+// Toggles an ingredient line between a normal quantity line and a section
+// heading like Lasanha's "Béchamel" (see ingredientLineHtml/
+// rescaleRecipeIngredients for how the flag changes rendering and scaling).
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".ingredient-title-toggle");
+  if (!btn) return;
+  const { cat, recipe, toggleField: field } = btn.dataset;
+  if (!cat || !recipe || !field) return;
+  const isTitle = getRecipeEdit(cat, recipe, `${field}IsTitle`, "") === "1";
+  saveRecipeEdit(cat, recipe, `${field}IsTitle`, isTitle ? "" : "1");
+  router();
 });
 
 window.addEventListener("hashchange", router);
