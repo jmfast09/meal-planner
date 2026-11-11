@@ -295,7 +295,14 @@ function getAddedSimpleListItems(catSlug) {
 
 function renderSimpleList(cat) {
   const data = SIMPLE_LISTS[cat.slug];
-  const staticItems = data.items.map((it) => ({ ...it, isAdded: false, field: null }));
+  // A static (shipped) row is removable the same way a built-in recipe is
+  // elsewhere in the app — flagged "{field}Deleted" rather than actually
+  // edited out of SIMPLE_LISTS, since that's shared data.js content. It
+  // stays a plain read-only row otherwise (name/value aren't typed in
+  // directly); only a row added via "+" can be edited in place.
+  const staticItems = data.items
+    .map((it, i) => ({ ...it, isAdded: false, field: `static${i}` }))
+    .filter((it) => getRecipeEdit(cat.slug, "__list", `${it.field}Deleted`, "") !== "1");
   const items = [...staticItems, ...getAddedSimpleListItems(cat.slug)]
     .sort((a, b) => a.name.localeCompare(b.name, "pt"));
 
@@ -306,9 +313,7 @@ function renderSimpleList(cat) {
     const valueCell = it.isAdded
       ? `<span contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="__list" data-field="${it.field}Value" data-placeholder="—">${escapeHtml(it.value)}</span>`
       : escapeHtml(it.value);
-    const deleteCell = it.isAdded
-      ? `<button type="button" class="simple-list-delete-btn" data-cat="${cat.slug}" data-field="${it.field}" aria-label="Remover" title="Remover">${TRASH_ICON}</button>`
-      : "";
+    const deleteCell = `<button type="button" class="simple-list-delete-btn" data-cat="${cat.slug}" data-field="${it.field}" aria-label="Remover" title="Remover">${TRASH_ICON}</button>`;
     return `
       <tr data-search-name="${escapeHtml(it.name)}">
         <td>${nameCell}</td>
@@ -1403,12 +1408,17 @@ document.addEventListener("click", (e) => {
   setTimeout(() => el.focus(), 0);
 });
 
-// Delegated listener: removes a user-added simple-list row (see
-// getAddedSimpleListItems — flagged "{field}Deleted", not resized).
+// Delegated listener: removes a simple-list row, static (shipped) or
+// user-added alike — both flagged "{field}Deleted", not resized (see
+// renderSimpleList/getAddedSimpleListItems). A static row is shared data
+// seen by everyone, not just this device, so it asks for confirmation
+// first the same way deleting a recipe does; a user's own added row is
+// quick to remove, same as any other "+"-added line in this app.
 document.addEventListener("click", (e) => {
   const btn = e.target.closest(".simple-list-delete-btn");
   if (!btn) return;
   const { cat, field } = btn.dataset;
+  if (field.startsWith("static") && !confirm("Remover este prato da lista? Esta ação não pode ser desfeita.")) return;
   saveRecipeEdit(cat, "__list", `${field}Deleted`, "1");
   router();
 });
