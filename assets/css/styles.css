@@ -717,6 +717,24 @@ body.cat-compras {
 .ingredient-list li.ingredient-locked { cursor: default; }
 .ingredient-list li > span[data-field] { flex: 1; min-width: 0; }
 
+.drag-handle {
+  flex-shrink: 0;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: none;
+  color: var(--line);
+  cursor: grab;
+  touch-action: none;
+}
+.drag-handle:active { cursor: grabbing; }
+.drag-handle svg { width: 16px; height: 16px; }
+li.is-dragging { opacity: 0.6; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+
 .ingredient-title-toggle {
   flex-shrink: 0;
   display: flex;

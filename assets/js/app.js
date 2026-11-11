@@ -20,6 +20,7 @@ const PLATE_ICON = `<svg width="34" height="34" viewBox="0 0 48 48" fill="none" 
 const CLOCHE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="100%" zoomAndPan="magnify" viewBox="0 0 1500 1499.999933" height="100%" preserveAspectRatio="xMidYMid meet" version="1.0"><defs><clipPath id="e18b330588"><path d="M 116 374.347656 L 1384 374.347656 L 1384 1125.847656 L 116 1125.847656 Z M 116 374.347656 " clip-rule="nonzero"/></clipPath></defs><path fill="currentColor" d="M 733.066406 530.339844 L 732.488281 513.007812 C 678.644531 514.855469 625.835938 525.140625 575.457031 543.628906 L 581.464844 559.921875 C 630.113281 542.011719 681.070312 532.074219 733.066406 530.339844 Z M 733.066406 530.339844 " fill-opacity="1" fill-rule="nonzero"/><path fill="currentColor" d="M 406.179688 672.351562 C 445.8125 632.71875 491.453125 600.480469 541.601562 576.675781 L 534.207031 560.960938 C 482.210938 585.6875 434.949219 618.964844 393.929688 659.988281 C 351.523438 702.394531 317.550781 751.039062 292.710938 804.652344 C 267.980469 858.152344 252.960938 915.351562 248.222656 974.625 L 265.554688 976.011719 C 274.683594 861.734375 324.601562 753.8125 406.179688 672.351562 Z M 406.179688 672.351562 " fill-opacity="1" fill-rule="nonzero"/><g clip-path="url(#e18b330588)"><path fill="currentColor" d="M 1361.078125 1048.578125 L 1326.875 1048.578125 C 1326.875 1045.574219 1325.949219 1042.570312 1323.984375 1039.914062 L 1313.933594 1025.699219 C 1309.3125 1019.113281 1301.914062 1013.914062 1293.25 1010.792969 C 1292.554688 939.152344 1278.226562 869.707031 1250.613281 804.191406 C 1223.226562 739.484375 1184.054688 681.363281 1134.136719 631.445312 C 1038.578125 535.886719 912.285156 479.84375 777.898438 472.914062 C 780.671875 456.390625 786.335938 442.984375 795.578125 431.546875 C 803.4375 421.839844 805.054688 410.167969 800.085938 399.539062 C 793.035156 384.515625 774.085938 374.578125 752.015625 374.347656 C 750.515625 374.347656 749.128906 374.347656 747.625 374.347656 C 725.554688 374.578125 706.605469 384.402344 699.558594 399.539062 C 694.589844 410.167969 696.207031 421.839844 704.0625 431.546875 C 713.308594 442.984375 719.085938 456.273438 721.742188 472.914062 C 587.242188 479.730469 461.0625 535.769531 365.503906 631.445312 C 315.585938 681.363281 276.417969 739.484375 249.03125 804.191406 C 221.300781 869.707031 206.972656 939.152344 206.394531 1010.792969 C 197.613281 1014.027344 190.332031 1019.113281 185.710938 1025.699219 L 175.65625 1039.914062 C 173.808594 1042.570312 172.769531 1045.574219 172.769531 1048.578125 L 138.566406 1048.578125 C 130.476562 1048.578125 122.96875 1052.738281 119.039062 1059.324219 C 115.339844 1065.449219 115.226562 1072.84375 118.578125 1079.082031 L 129.667969 1099.535156 C 138.335938 1115.597656 155.898438 1125.648438 175.542969 1125.648438 L 1324.449219 1125.648438 C 1344.089844 1125.648438 1361.65625 1115.710938 1370.320312 1099.535156 L 1381.414062 1079.082031 C 1384.765625 1072.84375 1384.648438 1065.449219 1380.949219 1059.324219 C 1376.675781 1052.738281 1369.164062 1048.578125 1361.078125 1048.578125 Z M 717.351562 420.683594 C 713.65625 416.179688 712.960938 411.554688 715.042969 406.933594 C 718.507812 399.539062 729.945312 391.914062 747.625 391.679688 C 748.320312 391.679688 749.011719 391.679688 749.589844 391.679688 C 750.285156 391.679688 750.976562 391.679688 751.554688 391.679688 C 769.234375 391.914062 780.671875 399.421875 784.140625 406.933594 C 786.335938 411.554688 785.527344 416.179688 781.828125 420.683594 C 770.160156 435.128906 763.226562 451.652344 760.105469 472.335938 C 759.875 472.335938 759.644531 472.335938 759.296875 472.335938 C 758.601562 472.335938 757.910156 472.335938 757.101562 472.335938 C 756.175781 472.335938 755.136719 472.335938 754.210938 472.335938 C 753.75 472.335938 753.402344 472.335938 752.941406 472.335938 C 750.628906 472.335938 748.320312 472.335938 746.007812 472.335938 C 745.546875 472.335938 745.085938 472.335938 744.621094 472.335938 C 743.699219 472.335938 742.773438 472.335938 741.734375 472.335938 C 741.039062 472.335938 740.230469 472.335938 739.539062 472.335938 C 739.304688 472.335938 739.074219 472.335938 738.730469 472.335938 C 736.070312 451.765625 729.023438 435.128906 717.351562 420.683594 Z M 223.496094 1007.210938 C 225.691406 869.9375 280.230469 741.101562 377.523438 643.808594 C 472.273438 549.058594 597.988281 494.40625 731.679688 490.015625 C 736.070312 489.898438 740.578125 489.78125 745.082031 489.78125 C 746.585938 489.78125 748.089844 489.78125 749.589844 489.78125 C 752.824219 489.78125 755.945312 489.78125 759.066406 489.898438 C 761.953125 489.898438 764.726562 490.011719 767.5 490.128906 L 767.617188 490.128906 C 901.191406 494.636719 1026.910156 549.289062 1121.660156 643.925781 C 1219.066406 741.332031 1273.492188 870.054688 1275.6875 1007.328125 L 223.496094 1007.328125 Z M 190.792969 1048.117188 L 199.578125 1035.753906 C 204.3125 1029.050781 215.40625 1024.542969 227.191406 1024.542969 L 1272.21875 1024.542969 C 1284.003906 1024.542969 1295.097656 1029.050781 1299.835938 1035.753906 L 1308.617188 1048.117188 C 1307.925781 1048.347656 1307 1048.578125 1305.730469 1048.578125 L 193.683594 1048.578125 C 192.527344 1048.578125 191.488281 1048.460938 190.792969 1048.117188 Z M 1365.8125 1070.996094 L 1354.722656 1091.445312 C 1349.175781 1101.730469 1337.15625 1108.433594 1324.101562 1108.433594 L 175.195312 1108.433594 C 162.136719 1108.433594 150.238281 1101.730469 144.574219 1091.445312 L 133.480469 1070.996094 C 133.136719 1070.417969 132.789062 1069.492188 133.597656 1068.335938 C 134.292969 1067.179688 135.792969 1066.027344 138.335938 1066.027344 L 1360.960938 1066.027344 C 1363.386719 1066.027344 1365.003906 1067.179688 1365.699219 1068.335938 C 1366.507812 1069.492188 1366.160156 1070.417969 1365.8125 1070.996094 Z M 1365.8125 1070.996094 " fill-opacity="1" fill-rule="nonzero"/></g></svg>`;
 const CAMERA_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>`;
 const TRASH_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
+const DRAG_HANDLE_ICON = `<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>`;
 const FILTER_ICON = `<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 3.5H17.5L12.1 10.2V15.8L7.9 17.5V10.2L2.5 3.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
 const EDIT_ICON = `<svg viewBox="0 0 1500 1499.999933" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M 1147.523438 777.4375 C 1147.523438 764.007812 1158.421875 753.109375 1171.851562 753.109375 C 1185.28125 753.109375 1196.179688 764.007812 1196.179688 777.4375 L 1196.179688 1082.613281 C 1196.179688 1133.703125 1175.257812 1180.171875 1141.636719 1213.84375 C 1107.964844 1247.511719 1061.546875 1268.386719 1010.457031 1268.386719 L 417.085938 1268.386719 C 365.996094 1268.386719 319.527344 1247.511719 285.855469 1213.84375 C 252.1875 1180.171875 231.3125 1133.753906 231.3125 1082.613281 L 231.3125 489.242188 C 231.3125 438.152344 252.234375 391.683594 285.855469 358.0625 C 319.527344 324.394531 365.945312 303.519531 417.085938 303.519531 L 722.261719 303.519531 C 735.691406 303.519531 746.589844 314.417969 746.589844 327.847656 C 746.589844 341.277344 735.691406 352.175781 722.261719 352.175781 L 417.085938 352.175781 C 379.375 352.175781 345.121094 367.601562 320.207031 392.464844 C 295.34375 417.328125 279.921875 451.628906 279.921875 489.292969 L 279.921875 1082.664062 C 279.921875 1120.371094 295.34375 1154.628906 320.207031 1179.492188 C 345.070312 1204.355469 379.375 1219.777344 417.085938 1219.777344 L 1010.457031 1219.777344 C 1048.117188 1219.777344 1082.421875 1204.355469 1107.285156 1179.492188 C 1132.148438 1154.628906 1147.570312 1120.371094 1147.570312 1082.664062 L 1147.570312 777.488281 Z M 697.398438 910.953125 L 588.746094 802.253906 L 576.242188 923.457031 L 697.445312 910.953125 Z M 604.21875 749.023438 L 750.628906 895.429688 L 1062.859375 583.199219 L 916.449219 436.789062 Z M 950.804688 402.4375 L 1097.210938 548.847656 L 1191.070312 455.035156 C 1210.242188 435.867188 1219.777344 410.660156 1219.777344 385.457031 C 1219.777344 360.203125 1210.242188 335 1191.070312 315.878906 L 1191.121094 315.828125 L 1185.183594 309.894531 L 1183.820312 308.628906 C 1164.652344 289.457031 1139.445312 279.921875 1114.242188 279.921875 C 1088.988281 279.921875 1063.785156 289.457031 1044.664062 308.628906 L 950.804688 402.488281 Z M 552.644531 731.847656 L 899.179688 385.3125 L 899.324219 385.164062 L 1010.308594 274.226562 C 1038.96875 245.566406 1076.628906 231.261719 1114.289062 231.261719 C 1151.949219 231.261719 1189.613281 245.566406 1218.269531 274.226562 L 1219.535156 275.589844 L 1225.472656 281.527344 L 1225.519531 281.476562 C 1254.179688 310.136719 1268.484375 347.796875 1268.484375 385.457031 C 1268.484375 423.117188 1254.179688 460.777344 1225.519531 489.4375 L 767.902344 947.054688 C 763.375 951.582031 757.441406 953.964844 751.503906 954.160156 L 551.523438 974.839844 C 538.191406 976.203125 526.269531 966.519531 524.957031 953.1875 C 524.761719 951.386719 524.761719 949.585938 525.003906 947.835938 L 545.832031 746.589844 C 546.414062 740.800781 548.992188 735.738281 552.789062 731.894531 L 552.738281 731.847656 Z M 552.644531 731.847656 " fill-opacity="1" fill-rule="nonzero"/></svg>`;
 const SAVE_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>`;
@@ -401,6 +402,7 @@ function ingredientLineHtml(text, field, editCtx, placeholder, isTitle) {
   const toggleTitle = isTitle ? "Tornar num ingrediente normal" : "Tornar em título";
   return `
     <li${isTitle ? ` class="ingredient-title-line"` : ""}>
+      <button type="button" class="drag-handle ingredient-drag-handle" aria-label="Arrastar para reordenar" title="Arrastar para reordenar">${DRAG_HANDLE_ICON}</button>
       <button type="button" class="ingredient-title-toggle${isTitle ? " is-active" : ""}" data-cat="${editCtx.cat}" data-recipe="${editCtx.recipe}" data-toggle-field="${field}" aria-label="${toggleTitle}" title="${toggleTitle}">Aa</button>
       <span contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${editCtx.cat}" data-recipe="${editCtx.recipe}" data-field="${field}"${placeholderAttr}>${escapeHtml(text)}</span>
     </li>
@@ -416,9 +418,10 @@ function ingredientLineHtml(text, field, editCtx, placeholder, isTitle) {
 // visible instead of looking like nothing happened (see the "+" click
 // handler below, which also scrolls it into view).
 function ingredientListHtml(items, addedItems, editCtx) {
-  const visible = editCtx
+  let visible = editCtx
     ? visibleIngredientItems(editCtx.cat, editCtx.recipe, editCtx.prefix, items, addedItems)
     : items.map((text) => ({ field: null, text, isAdded: false }));
+  if (editCtx) visible = applyFieldOrder(editCtx.cat, editCtx.recipe, `${editCtx.prefix}Order`, visible);
   const lis = visible
     .map(({ field, text, isAdded }) => {
       const isTitle = editCtx && field && getRecipeEdit(editCtx.cat, editCtx.recipe, `${field}IsTitle`, "") === "1";
@@ -459,6 +462,38 @@ function appendPrepLines(catSlug, recipeSlug, lines) {
   saveRecipeEdit(catSlug, recipeSlug, "prepAddedCount", String(count));
 }
 
+// Drag-and-drop reordering (see the pointerdown handler further down) is
+// stored the same way as everything else: not by moving any field's own
+// content, but as a separate "{orderField}" JSON array of field names in
+// the order the user dragged them into. Rendering (here) rearranges the
+// natural field+text list to match it; anything not yet mentioned — a line
+// added after the last reorder, most commonly — keeps its natural place,
+// appended at the end, so a fresh line never gets silently lost from view.
+function applyFieldOrder(catSlug, recipeSlug, orderField, items) {
+  const raw = getRecipeEdit(catSlug, recipeSlug, orderField, "");
+  if (!raw) return items;
+  let savedOrder;
+  try {
+    savedOrder = JSON.parse(raw);
+  } catch {
+    return items;
+  }
+  if (!Array.isArray(savedOrder)) return items;
+
+  const byField = new Map(items.map((it) => [it.field, it]));
+  const ordered = [];
+  savedOrder.forEach((f) => {
+    if (byField.has(f)) {
+      ordered.push(byField.get(f));
+      byField.delete(f);
+    }
+  });
+  items.forEach((it) => {
+    if (byField.has(it.field)) ordered.push(it);
+  });
+  return ordered;
+}
+
 // A step (base or added) is "removed" by flagging it "{field}Deleted" = "1"
 // rather than actually shrinking any array — the base preparacao array is
 // fixed-length shipped data.js content for a built-in recipe (nothing to
@@ -479,7 +514,8 @@ function visiblePrepSteps(catSlug, recipeSlug, baseSteps) {
 }
 
 function prepChecklistHtml(catSlug, recipeSlug, steps, editable) {
-  const visible = visiblePrepSteps(catSlug, recipeSlug, steps);
+  let visible = visiblePrepSteps(catSlug, recipeSlug, steps);
+  visible = applyFieldOrder(catSlug, recipeSlug, "prepOrder", visible);
   const items = visible.map(({ field, text, isAdded }, i) => {
     const key = prepStorageKey(catSlug, recipeSlug, field);
     const checked = localStorage.getItem(key) === "1" ? "checked" : "";
@@ -489,9 +525,13 @@ function prepChecklistHtml(catSlug, recipeSlug, steps, editable) {
     const textHtml = editable
       ? `<span class="prep-step-text" contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${catSlug}" data-recipe="${recipeSlug}" data-field="${field}"${placeholderAttr}>${escapeHtml(text)}</span>`
       : `<span class="prep-step-text">${escapeHtml(text)}</span>`;
+    const dragHandle = editable
+      ? `<button type="button" class="drag-handle prep-drag-handle" aria-label="Arrastar para reordenar" title="Arrastar para reordenar">${DRAG_HANDLE_ICON}</button>`
+      : "";
     return `
       <li>
         <div class="prep-step">
+          ${dragHandle}
           <label class="prep-step-check">
             <input type="checkbox" data-prep-key="${key}" ${checked} />
             <span class="prep-step-num">${i + 1}.</span>
@@ -1654,6 +1694,71 @@ document.addEventListener("paste", (e) => {
       if (again) placeCursorAtEnd(again);
     });
   }
+});
+
+// Drag-and-drop reordering for ingredient and prep-step lines, via Pointer
+// Events rather than native HTML5 drag-and-drop — Pointer Events fire the
+// same way for mouse and touch, so one implementation covers both desktop
+// and mobile, where native HTML5 DnD mostly doesn't work at all. The
+// dragged <li> moves live in the DOM as the pointer crosses a sibling's
+// midpoint (so what's dragged is what the user sees move, not a separate
+// placeholder), and only the final order gets saved — as a "{prefix}Order"
+// field (see applyFieldOrder), never by touching any line's own content.
+document.addEventListener("pointerdown", (e) => {
+  const handle = e.target.closest(".drag-handle");
+  if (!handle) return;
+  const li = handle.closest("li");
+  const list = handle.closest("ul");
+  const fieldEl = li && li.querySelector("[data-field]");
+  if (!li || !list || !fieldEl) return;
+
+  e.preventDefault();
+  const { cat, recipe } = fieldEl.dataset;
+  const isPrep = list.classList.contains("prep-list");
+  const orderField = isPrep ? "prepOrder" : (fieldEl.dataset.field.startsWith("ingredientExtra") ? "ingredientExtraOrder" : "ingredientOrder");
+
+  li.classList.add("is-dragging");
+  list.classList.add("is-reordering");
+
+  // Listens on document, not the handle itself: reparenting li (and the
+  // handle inside it) via insertBefore/appendChild on every move is, per
+  // spec, indistinguishable from a brief remove+reinsert — which silently
+  // drops setPointerCapture (and any listener scoped to the handle) the
+  // very first time the dragged row actually moves. document never moves,
+  // so it keeps seeing every event regardless of what li's current
+  // position is.
+  function onMove(ev) {
+    const y = ev.clientY;
+    const siblings = Array.from(list.children).filter((el) => el !== li);
+    const target = siblings.find((sib) => {
+      const rect = sib.getBoundingClientRect();
+      return y < rect.top + rect.height / 2;
+    });
+    if (target) {
+      if (target.previousElementSibling !== li) list.insertBefore(li, target);
+    } else if (list.lastElementChild !== li) {
+      list.appendChild(li);
+    }
+  }
+
+  function onUp() {
+    document.removeEventListener("pointermove", onMove);
+    document.removeEventListener("pointerup", onUp);
+    document.removeEventListener("pointercancel", onUp);
+    li.classList.remove("is-dragging");
+    list.classList.remove("is-reordering");
+
+    const newOrder = Array.from(list.children)
+      .map((el) => el.querySelector("[data-field]"))
+      .filter(Boolean)
+      .map((el) => el.dataset.field);
+    saveRecipeEdit(cat, recipe, orderField, JSON.stringify(newOrder));
+    router();
+  }
+
+  document.addEventListener("pointermove", onMove);
+  document.addEventListener("pointerup", onUp);
+  document.addEventListener("pointercancel", onUp);
 });
 
 window.addEventListener("hashchange", router);
