@@ -712,10 +712,45 @@ function renderRecipe(catSlug, recipeSlug) {
   `;
 }
 
+// Unsaved progress on the new-recipe form used to live only in the DOM —
+// any navigation away (even just back to the category list and back here)
+// re-rendered this page from scratch and silently discarded everything
+// typed so far, with no confirmation. Mirrored into localStorage (per
+// category, per device — plain draft text, nothing worth syncing across
+// devices) as the user types, and restored here, so leaving and coming
+// back picks up where they left off. Cleared once the recipe is actually
+// saved or the user explicitly hits "Limpar".
+function newRecipeDraftKey(catSlug) {
+  return `mealplanner:newRecipeDraft:${catSlug}`;
+}
+function loadNewRecipeDraft(catSlug) {
+  try {
+    const raw = localStorage.getItem(newRecipeDraftKey(catSlug));
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+function clearNewRecipeDraft(catSlug) {
+  try {
+    localStorage.removeItem(newRecipeDraftKey(catSlug));
+  } catch {
+    /* ignore */
+  }
+}
+
 function renderNewRecipe(catSlug) {
   const cat = findCategory(catSlug);
   if (!cat || cat.type !== "recipes") return renderNotFound();
   document.body.className = "cat-" + cat.slug;
+
+  const draft = loadNewRecipeDraft(catSlug) || {};
+  const draftIngredients = draft.ingredients && draft.ingredients.length ? draft.ingredients : [""];
+  const draftSteps = draft.preparacao && draft.preparacao.length ? draft.preparacao : [""];
+  const iconPreviewHtml = draft.iconData
+    ? `<img class="recipe-icon-preview recipe-dish-icon" src="${draft.iconData}" alt="" />`
+    : `<div class="recipe-icon-preview recipe-icon new-recipe-icon-placeholder">${CLOCHE_ICON}</div>`;
+  const iconWrapAttr = draft.iconData ? ` data-icon-data="${escapeHtml(draft.iconData)}"` : "";
 
   return `
     <div class="app-shell">
@@ -744,16 +779,16 @@ function renderNewRecipe(catSlug) {
           </div>
 
           <div class="recipe-head">
-            <div class="recipe-icon-wrap">
-              <div class="recipe-icon-preview recipe-icon new-recipe-icon-placeholder">${CLOCHE_ICON}</div>
+            <div class="recipe-icon-wrap"${iconWrapAttr}>
+              ${iconPreviewHtml}
               ${recipeIconUploadHtml()}
             </div>
-            <h1 class="new-recipe-name" contenteditable="true" spellcheck="false" data-singleline="true" data-placeholder="Nome da receita"></h1>
+            <h1 class="new-recipe-name" contenteditable="true" spellcheck="false" data-singleline="true" data-placeholder="Nome da receita">${escapeHtml(draft.name || "")}</h1>
           </div>
 
           <div class="recipe-meta">
-            <span class="meta-pill meta-pill-doses"><span class="new-recipe-doses" contenteditable="true" spellcheck="false" data-singleline="true" data-placeholder="ex: 4"></span>&nbsp;doses</span>
-            <span class="meta-pill meta-pill-tempo"><span class="new-recipe-tempo" contenteditable="true" spellcheck="false" data-singleline="true" data-placeholder="ex: 30 min"></span>&nbsp;de preparação</span>
+            <span class="meta-pill meta-pill-doses"><span class="new-recipe-doses" contenteditable="true" spellcheck="false" data-singleline="true" data-placeholder="ex: 4">${escapeHtml(draft.doses || "")}</span>&nbsp;doses</span>
+            <span class="meta-pill meta-pill-tempo"><span class="new-recipe-tempo" contenteditable="true" spellcheck="false" data-singleline="true" data-placeholder="ex: 30 min">${escapeHtml(draft.tempo || "")}</span>&nbsp;de preparação</span>
           </div>
 
           <div class="recipe-grid">
@@ -762,25 +797,27 @@ function renderNewRecipe(catSlug) {
                 <div class="box-header">Ingredientes</div>
                 <div class="box-body">
                   <ul class="ingredient-list new-recipe-list" data-new-list="ingredients">
-                    <li contenteditable="true" spellcheck="false" data-placeholder="Escreve ou cola os ingredientes"></li>
+                    ${draftIngredients.map((t) => `<li contenteditable="true" spellcheck="false" data-placeholder="Escreve ou cola os ingredientes">${escapeHtml(t)}</li>`).join("")}
                   </ul>
                 </div>
               </div>
               <div class="box notas-box">
                 <div class="box-header">Notas</div>
-                <div class="box-body new-recipe-notas" contenteditable="true" spellcheck="false" data-placeholder="Notas (opcional)"></div>
+                <div class="box-body new-recipe-notas" contenteditable="true" spellcheck="false" data-placeholder="Notas (opcional)">${escapeHtml(draft.notas || "")}</div>
               </div>
             </div>
             <div class="box">
               <div class="box-header">Preparação</div>
               <div class="box-body">
                 <ul class="prep-list new-recipe-list" data-new-list="preparacao">
-                  <li>
-                    <div class="prep-step">
-                      <span class="prep-step-num">1.</span>
-                      <span class="prep-step-text" contenteditable="true" spellcheck="false" data-placeholder="Escreve ou cola os passos"></span>
-                    </div>
-                  </li>
+                  ${draftSteps.map((t, i) => `
+                    <li>
+                      <div class="prep-step">
+                        <span class="prep-step-num">${i + 1}.</span>
+                        <span class="prep-step-text" contenteditable="true" spellcheck="false" data-placeholder="Escreve ou cola os passos">${escapeHtml(t)}</span>
+                      </div>
+                    </li>
+                  `).join("")}
                 </ul>
               </div>
             </div>
@@ -881,29 +918,69 @@ function bindNewRecipeList(ul) {
   });
 }
 
+// Reads the new-recipe form's current state straight from the DOM — shared
+// by the Save button (which needs the trimmed, Boolean-filtered version of
+// each list) and the draft autosave (which keeps blank trailing lines as
+// typed, so an empty line the user is about to fill in doesn't vanish from
+// under them on the next draft save).
+function captureNewRecipeForm(root) {
+  const name = root.querySelector(".new-recipe-name").textContent.trim();
+  const doses = root.querySelector(".new-recipe-doses").textContent.trim();
+  const tempo = root.querySelector(".new-recipe-tempo").textContent.trim();
+  const ingredients = Array.from(root.querySelectorAll('[data-new-list="ingredients"] > li')).map((li) => li.textContent.trim());
+  const preparacao = Array.from(root.querySelectorAll('[data-new-list="preparacao"] .prep-step-text')).map((el) => el.textContent.trim());
+  const notas = root.querySelector(".new-recipe-notas").innerText.trim();
+  const iconWrap = root.querySelector(".recipe-icon-wrap");
+  const iconData = (iconWrap && iconWrap.dataset.iconData) || "";
+  return { name, doses, tempo, ingredients, preparacao, notas, iconData };
+}
+
+let newRecipeDraftSaveTimer = null;
+let newRecipeDraftObserver = null;
+
+// Mirrors the live form into localStorage (debounced) on every change —
+// typed, pasted, or a line added/removed — by watching the DOM directly
+// rather than each interaction separately, since several of them
+// (Enter/Backspace/paste in bindNewRecipeList, the icon upload) mutate it
+// programmatically without firing an "input" event.
+function bindNewRecipeDraftAutosave(catSlug, root) {
+  if (newRecipeDraftObserver) newRecipeDraftObserver.disconnect();
+  newRecipeDraftObserver = new MutationObserver(() => {
+    clearTimeout(newRecipeDraftSaveTimer);
+    newRecipeDraftSaveTimer = setTimeout(() => {
+      const draft = captureNewRecipeForm(root);
+      const hasContent = draft.name || draft.doses || draft.tempo || draft.notas || draft.iconData
+        || draft.ingredients.some(Boolean) || draft.preparacao.some(Boolean);
+      if (hasContent) {
+        try { localStorage.setItem(newRecipeDraftKey(catSlug), JSON.stringify(draft)); } catch { /* ignore */ }
+      } else {
+        clearNewRecipeDraft(catSlug);
+      }
+    }, 400);
+  });
+  newRecipeDraftObserver.observe(root, { subtree: true, childList: true, characterData: true });
+}
+
 function bindNewRecipeEvents(catSlug) {
   const root = document.querySelector(".recipe-page-new");
   if (!root) return;
 
   root.querySelectorAll(".new-recipe-list").forEach((ul) => bindNewRecipeList(ul));
+  bindNewRecipeDraftAutosave(catSlug, root);
 
   const saveBtn = root.querySelector(".new-recipe-save-btn");
   if (saveBtn) {
     saveBtn.addEventListener("click", () => {
-      const name = root.querySelector(".new-recipe-name").textContent.trim();
+      const form = captureNewRecipeForm(root);
+      const name = form.name;
       if (!name) {
         alert("Escreve pelo menos o nome da receita.");
         return;
       }
-      const doses = root.querySelector(".new-recipe-doses").textContent.trim();
-      const tempo = root.querySelector(".new-recipe-tempo").textContent.trim();
-      const ingredients = Array.from(root.querySelectorAll('[data-new-list="ingredients"] > li'))
-        .map((li) => li.textContent.trim())
-        .filter(Boolean);
-      const preparacao = Array.from(root.querySelectorAll('[data-new-list="preparacao"] .prep-step-text'))
-        .map((el) => el.textContent.trim())
-        .filter(Boolean);
-      const notas = root.querySelector(".new-recipe-notas").innerText.trim();
+      const { doses, tempo } = form;
+      const ingredients = form.ingredients.filter(Boolean);
+      const preparacao = form.preparacao.filter(Boolean);
+      const notas = form.notas;
 
       if (!window.saveNewRecipeRemote) {
         alert("A app ainda está a ligar-se à base de dados. Espera um instante e tenta guardar de novo.");
@@ -913,14 +990,14 @@ function bindNewRecipeEvents(catSlug) {
       const slug = uniqueRecipeSlug(catSlug, slugifyRecipeName(name));
       const recipe = { slug, name, doses, tempo, ingredients, preparacao };
       if (notas) recipe.notas = notas;
-      const iconWrap = root.querySelector(".recipe-icon-wrap");
-      if (iconWrap && iconWrap.dataset.iconData) recipe.iconData = iconWrap.dataset.iconData;
+      if (form.iconData) recipe.iconData = form.iconData;
       // uniqueRecipeSlug ignores hidden (deleted) recipes when checking for
       // collisions, so recreating one reuses its old slug — clear any stale
       // "hidden" flag left over from that deletion, or the new recipe would
       // be filtered out by getAllRecipes and immediately 404.
       saveRecipeEdit(catSlug, slug, "hidden", "");
       window.saveNewRecipeRemote(catSlug, recipe);
+      clearNewRecipeDraft(catSlug);
       location.hash = `#/cat/${catSlug}/${slug}`;
     });
   }
@@ -929,6 +1006,7 @@ function bindNewRecipeEvents(catSlug) {
   if (clearBtn) {
     clearBtn.addEventListener("click", () => {
       if (!confirm("Isto limpa tudo o que escreveste nesta página. Continuar?")) return;
+      clearNewRecipeDraft(catSlug);
       router();
     });
   }
