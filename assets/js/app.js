@@ -446,6 +446,19 @@ function getAddedPrepSteps(catSlug, recipeSlug) {
   return items;
 }
 
+// Appends each line as its own new step (see the paste handler below) —
+// always at the end, same place the "+" button's own new line lands,
+// since there's no "insert in the middle" for Added items (see the
+// Added-items comment on ingredients further down).
+function appendPrepLines(catSlug, recipeSlug, lines) {
+  let count = getAddedPrepCount(catSlug, recipeSlug);
+  lines.forEach((line) => {
+    saveRecipeEdit(catSlug, recipeSlug, `prepAdded${count}`, line);
+    count++;
+  });
+  saveRecipeEdit(catSlug, recipeSlug, "prepAddedCount", String(count));
+}
+
 // A step (base or added) is "removed" by flagging it "{field}Deleted" = "1"
 // rather than actually shrinking any array — the base preparacao array is
 // fixed-length shipped data.js content for a built-in recipe (nothing to
@@ -788,6 +801,25 @@ function placeCursorAtEnd(el) {
   sel.addRange(range);
 }
 
+// Inserts plain text at the current cursor position (replacing the current
+// selection, same as any normal paste), without the browser's own default
+// paste handling — which, for a multi-line clipboard payload, inserts a
+// <div> per extra line *inside* this one "singleline" field instead of
+// anywhere else; see the paste handler below for why that's a problem
+// worth avoiding rather than letting happen.
+function insertPlainTextAtCursor(text) {
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+  range.deleteContents();
+  const node = document.createTextNode(text);
+  range.insertNode(node);
+  range.setStartAfter(node);
+  range.setEndAfter(node);
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
 function bindNewRecipeList(ul) {
   const isPrep = ul.dataset.newList === "preparacao";
 
@@ -1016,6 +1048,23 @@ function getAddedIngredients(cat, recipeSlug, prefix) {
   const items = [];
   for (let k = 0; k < count; k++) items.push(getRecipeEdit(cat, recipeSlug, `${prefix}Added${k}`, ""));
   return items;
+}
+
+// Appends each line as its own new ingredient (see the paste handler
+// below) — always at the end, like the "+" button's own new line, since
+// Added items can only ever be appended, never inserted mid-list. Also
+// sets the Standard baseline (same as typing a new value in while at
+// standard doses, see commitFieldEdit's addedMatch handling), so a
+// pasted-in ingredient scales correctly on the next dose change instead of
+// being treated as blank.
+function appendIngredientLines(cat, recipeSlug, prefix, lines) {
+  let count = getAddedIngredientCount(cat, recipeSlug, prefix);
+  lines.forEach((line) => {
+    saveRecipeEdit(cat, recipeSlug, `${prefix}Added${count}`, line);
+    saveRecipeEdit(cat, recipeSlug, `${prefix}AddedStandard${count}`, line);
+    count++;
+  });
+  saveRecipeEdit(cat, recipeSlug, `${prefix}AddedCount`, String(count));
 }
 
 // An ingredient (base or added) is "removed" by flagging it "{field}Deleted"
@@ -1471,6 +1520,62 @@ document.addEventListener("click", (e) => {
   const isTitle = getRecipeEdit(cat, recipe, `${field}IsTitle`, "") === "1";
   saveRecipeEdit(cat, recipe, `${field}IsTitle`, isTitle ? "" : "1");
   router();
+});
+
+// Pasting into an existing ingredient or prep-step line takes over from the
+// browser's own default paste handling entirely. Left alone, a multi-line
+// clipboard payload gets crammed into this one "singleline" field as
+// embedded <div>s — visually overlapping the row below it, and saved as one
+// run-on string with no separators (readFieldValue just reads textContent).
+// Worse, each ingredient/step is its own separate contenteditable region,
+// so a selection can end up spanning from one into a sibling (an easy
+// accident when dragging to select), and the browser's default paste
+// replaces that whole cross-element selection — which can erase content in
+// a *different* line than the one actually being edited. Taking over
+// avoids both: the first pasted line merges in at the cursor like normal
+// typing (see insertPlainTextAtCursor), confined to this one field; any
+// further lines become brand new lines of their own, appended at the end
+// (see appendPrepLines/appendIngredientLines), never touching a sibling's
+// existing text.
+document.addEventListener("paste", (e) => {
+  const prepEl = e.target.closest(".prep-step-text[data-field]");
+  const ingEl = !prepEl && e.target.closest(".ingredient-list li span[data-field]");
+  const el = prepEl || ingEl;
+  if (!el) return;
+  const text = (e.clipboardData || window.clipboardData).getData("text/plain");
+  if (!text) return;
+  e.preventDefault();
+
+  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (lines.length === 0) return;
+
+  // The selection itself can span into a sibling line (each ingredient/step
+  // is its own separate contenteditable region, so a drag-selection across
+  // two of them is possible) — if so, collapse it to just this field's own
+  // cursor position first, so inserting the pasted text can never delete a
+  // *different* line's content via a cross-element range.
+  const sel = window.getSelection();
+  if (sel.rangeCount && !el.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+    placeCursorAtEnd(el);
+  }
+
+  insertPlainTextAtCursor(lines[0]);
+  commitFieldEdit(el);
+
+  if (lines.length > 1) {
+    const { cat, recipe, field } = el.dataset;
+    if (prepEl) {
+      appendPrepLines(cat, recipe, lines.slice(1));
+    } else {
+      const prefix = field.startsWith("ingredientExtra") ? "ingredientExtra" : "ingredient";
+      appendIngredientLines(cat, recipe, prefix, lines.slice(1));
+    }
+    router();
+    requestAnimationFrame(() => {
+      const again = document.querySelector(`[data-field="${field}"]`);
+      if (again) placeCursorAtEnd(again);
+    });
+  }
 });
 
 window.addEventListener("hashchange", router);
