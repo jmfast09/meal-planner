@@ -772,6 +772,7 @@ body.cat-compras {
   font-size: 12px;
   letter-spacing: 0.06em;
   color: var(--accent-dark);
+  text-transform: uppercase;
 }
 
 .prep-list li {
