@@ -7,6 +7,8 @@ import {
   doc,
   onSnapshot,
   setDoc,
+  updateDoc,
+  deleteField,
   arrayUnion,
   arrayRemove,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
@@ -96,6 +98,25 @@ window.saveRecipeEditRemote = function (catSlug, recipeSlug, field, value) {
   ).catch((err) => {
     console.error("Failed to save recipe edit:", err);
     alert("Não foi possível guardar a alteração (sem ligação?). Tenta novamente.");
+  });
+};
+
+// Wipes every saved edit for one recipe (every ingredient/step correction,
+// icon, notes, title flags, doses overrides...) in one go, instead of
+// leaving them all behind under that slug forever. Needed on delete: a
+// setDoc({merge:true}) of just "hidden" (the old behavior) never touches
+// fields it doesn't mention, so recreating a recipe with the same name —
+// which reuses the same slug, see uniqueRecipeSlug — would silently
+// resurrect every leftover field from the deleted one. deleteField() on
+// the whole nested map (via a dotted path, since updateDoc doesn't accept
+// a nested object the way setDoc's merge does) is the only way to
+// actually remove it rather than merge an empty object over it (a no-op).
+window.deleteRecipeEditsRemote = function (catSlug, recipeSlug) {
+  const cache = window.__recipeEditsCache;
+  if (cache && cache[catSlug]) delete cache[catSlug][recipeSlug];
+
+  updateDoc(recipeEditsRef, { [`${catSlug}.${recipeSlug}`]: deleteField() }).catch((err) => {
+    console.error("Failed to clear recipe edits:", err);
   });
 };
 
@@ -206,6 +227,21 @@ window.saveNewRecipeRemote = function (catSlug, recipe) {
   ).catch((err) => {
     console.error("Failed to save new recipe:", err);
     alert("Não foi possível guardar a receita (sem ligação?). Tenta novamente.");
+  });
+};
+
+// Removes an in-app-created recipe outright (as opposed to a built-in
+// one, which can only ever be hidden — see bindRecipeDelete) — deleteField
+// on its own key, not a hidden flag, so a later recipe reusing the same
+// name/slug (see uniqueRecipeSlug) starts from nothing instead of having
+// saveNewRecipeRemote's own {merge:true} splice old fields (icon, notes...)
+// into the new recipe object wherever the new one doesn't mention them.
+window.deleteNewRecipeRemote = function (catSlug, recipeSlug) {
+  const cache = window.__newRecipesCache;
+  if (cache && cache[catSlug]) delete cache[catSlug][recipeSlug];
+
+  updateDoc(newRecipesRef, { [`${catSlug}.${recipeSlug}`]: deleteField() }).catch((err) => {
+    console.error("Failed to delete recipe:", err);
   });
 };
 

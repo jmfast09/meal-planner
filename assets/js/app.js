@@ -965,7 +965,22 @@ function bindRecipeDelete() {
   btn.addEventListener("click", () => {
     const { cat, recipe } = btn.dataset;
     if (!confirm("Apagar esta receita? Esta ação não pode ser desfeita.")) return;
-    saveRecipeEdit(cat, recipe, "hidden", "1");
+
+    // Always wipe every saved edit under this slug (ingredient/step
+    // corrections, icon, notes, title flags, doses overrides...) — not just
+    // hide the recipe — so a later recipe recreated with the same name
+    // (which reuses this exact slug, see uniqueRecipeSlug) starts from
+    // nothing instead of inheriting whatever this one left behind.
+    if (window.deleteRecipeEditsRemote) window.deleteRecipeEditsRemote(cat, recipe);
+
+    const isCreatedRecipe = !!(window.__newRecipesCache && window.__newRecipesCache[cat] && window.__newRecipesCache[cat][recipe]);
+    if (isCreatedRecipe && window.deleteNewRecipeRemote) {
+      // Created in-app: remove it outright, nothing to hide.
+      window.deleteNewRecipeRemote(cat, recipe);
+    } else {
+      // Built-in: data.js content can't be removed, only hidden from the list.
+      saveRecipeEdit(cat, recipe, "hidden", "1");
+    }
     location.hash = `#/cat/${cat}`;
   });
 }
