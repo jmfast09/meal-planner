@@ -764,8 +764,8 @@ function renderRecipe(catSlug, recipeSlug) {
           </div>
 
           <div class="recipe-meta">
-            <span class="meta-pill meta-pill-doses"><span contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="doses">${escapeHtml(String(recipe.doses))}</span>&nbsp;doses${rawRecipe.doses ? dosesStepperHtml(cat.slug, recipe.slug, parseDoseValue(recipe.doses)) : ""}</span>
-            <span class="meta-pill meta-pill-tempo"><span contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="tempo">${escapeHtml(recipe.tempo)}</span>&nbsp;de preparação${tempoFlag}</span>
+            <span class="meta-pill meta-pill-doses"><span contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="doses" data-placeholder="ex: 4">${escapeHtml(String(recipe.doses))}</span>&nbsp;doses${rawRecipe.doses ? dosesStepperHtml(cat.slug, recipe.slug, parseDoseValue(recipe.doses)) : ""}</span>
+            <span class="meta-pill meta-pill-tempo"><span contenteditable="true" spellcheck="false" data-singleline="true" data-cat="${cat.slug}" data-recipe="${recipe.slug}" data-field="tempo" data-placeholder="ex: 30 min">${escapeHtml(recipe.tempo)}</span>&nbsp;de preparação${tempoFlag}</span>
           </div>
 
           ${mobileTabsHtml}
